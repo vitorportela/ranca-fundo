@@ -2,7 +2,7 @@
 // - Guarda o site e o modelo de IA no aparelho para funcionar sem internet.
 // - Acrescenta os cabeçalhos COOP/COEP (necessários para a IA usar vários núcleos),
 //   já que hospedagens como o GitHub Pages não permitem configurá-los.
-const VERSION = 'v5';
+const VERSION = 'v6';
 const SHELL_CACHE = 'shell-' + VERSION;
 const DATA_CACHE = 'data-v1'; // modelo e wasm (arquivos imutáveis, nomeados por hash)
 
@@ -34,12 +34,25 @@ function withIsolation(resp) {
   return new Response(resp.body, { status: resp.status, statusText: resp.statusText, headers: h });
 }
 
+// Baixa com novas tentativas (rede do celular instável, erro 5xx momentâneo do servidor)
+async function fetchWithRetry(req, tries = 3) {
+  for (let i = 1; ; i++) {
+    try {
+      const resp = await fetch(req);
+      if (resp.ok || resp.status < 500 || i >= tries) return resp;
+    } catch (err) {
+      if (i >= tries) throw err;
+    }
+    await new Promise((r) => setTimeout(r, 800 * i));
+  }
+}
+
 // Arquivos do modelo: cache primeiro (nunca mudam)
 async function cacheFirst(req) {
   const cache = await caches.open(DATA_CACHE);
   const hit = await cache.match(req);
   if (hit) return hit;
-  const resp = await fetch(req);
+  const resp = await fetchWithRetry(req);
   if (resp.ok) await cache.put(req, resp.clone());
   return resp;
 }
