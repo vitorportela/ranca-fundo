@@ -528,6 +528,29 @@
     if (!splash.hidden && (e.key === 'Enter' || e.key === 'Escape')) closeSplash();
   });
 
+  /* ---------------- Instalar como app ---------------- */
+  // O Chrome avisa (beforeinstallprompt) quando o site pode ser instalado;
+  // guardamos o evento e mostramos nossos botões "Instalar app".
+  const installBtns = document.querySelectorAll('.install-btn');
+  let installPrompt = null;
+  const showInstall = (on) => installBtns.forEach((b) => { b.hidden = !on; });
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    installPrompt = e;
+    showInstall(true);
+  });
+  installBtns.forEach((b) => b.addEventListener('click', async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') { installPrompt = null; showInstall(false); }
+  }));
+  window.addEventListener('appinstalled', () => {
+    installPrompt = null;
+    showInstall(false);
+    notify('App instalado! Procure o ícone Ranca Fundo na tela inicial.', false, 7000);
+  });
+
   /* ---------------- Início ---------------- */
   loadPrefs();
   el.tolOut.textContent = el.tolerance.value;

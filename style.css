@@ -72,6 +72,9 @@ button, input, select { font: inherit; color: inherit; }
   color: var(--muted); font-size: .85rem;
 }
 .pill svg { width: 14px; height: 14px; fill: var(--ok); }
+.topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.topbar-right .install-btn { padding: 7px 14px; font-size: .9rem; }
+.topbar-right .install-btn svg { width: 16px; height: 16px; }
 
 main { padding: 0 clamp(16px, 4vw, 48px) 48px; max-width: 1280px; margin: 0 auto; }
 
@@ -377,6 +380,7 @@ body.splash-open { overflow: hidden; }
 .heart-inline { width: 1.05em; height: 1.05em; vertical-align: -.15em; fill: var(--accent); animation: beat 1.4s ease-in-out 1s infinite; }
 .splash-brand { justify-content: center; margin-bottom: 22px; animation: rise .6s ease .45s both; }
 .splash-btn { width: 100%; animation: rise .6s ease .6s both; }
+.splash-install { width: 100%; margin-top: 10px; animation: rise .6s ease .7s both; }
 
 .hearts { position: absolute; inset: 0; pointer-events: none; }
 .hearts i {

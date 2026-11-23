@@ -2,7 +2,7 @@
 // - Guarda o site e o modelo de IA no aparelho para funcionar sem internet.
 // - Acrescenta os cabeçalhos COOP/COEP (necessários para a IA usar vários núcleos),
 //   já que hospedagens como o GitHub Pages não permitem configurá-los.
-const VERSION = 'v3';
+const VERSION = 'v4';
 const SHELL_CACHE = 'shell-' + VERSION;
 const DATA_CACHE = 'data-v1'; // modelo e wasm (arquivos imutáveis, nomeados por hash)
 
