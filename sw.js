@@ -1,0 +1,72 @@
+// Service worker do Ranca Fundo
+// - Guarda o site e o modelo de IA no aparelho para funcionar sem internet.
+// - Acrescenta os cabeçalhos COOP/COEP (necessários para a IA usar vários núcleos),
+//   já que hospedagens como o GitHub Pages não permitem configurá-los.
+const VERSION = 'v3';
+const SHELL_CACHE = 'shell-' + VERSION;
+const DATA_CACHE = 'data-v1'; // modelo e wasm (arquivos imutáveis, nomeados por hash)
+
+const SHELL = [
+  './', 'index.html', 'style.css', 'app.js', 'solid.js', 'edges.js', 'manifest.webmanifest',
+  'img/mozao.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
+  'vendor/background-removal.js', 'vendor/imgly-data/resources.json',
+];
+
+self.addEventListener('install', (e) => {
+  e.waitUntil(caches.open(SHELL_CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener('activate', (e) => {
+  e.waitUntil((async () => {
+    for (const k of await caches.keys()) {
+      if (k !== SHELL_CACHE && k !== DATA_CACHE) await caches.delete(k);
+    }
+    await self.clients.claim();
+  })());
+});
+
+function withIsolation(resp) {
+  if (!resp || resp.status === 0 || resp.type === 'opaque') return resp;
+  const h = new Headers(resp.headers);
+  h.set('Cross-Origin-Opener-Policy', 'same-origin');
+  h.set('Cross-Origin-Embedder-Policy', 'require-corp');
+  h.set('Cross-Origin-Resource-Policy', 'same-origin');
+  return new Response(resp.body, { status: resp.status, statusText: resp.statusText, headers: h });
+}
+
+// Arquivos do modelo: cache primeiro (nunca mudam)
+async function cacheFirst(req) {
+  const cache = await caches.open(DATA_CACHE);
+  const hit = await cache.match(req);
+  if (hit) return hit;
+  const resp = await fetch(req);
+  if (resp.ok) await cache.put(req, resp.clone());
+  return resp;
+}
+
+// Site: responde do cache na hora e atualiza em segundo plano
+async function staleWhileRevalidate(req, event) {
+  const cache = await caches.open(SHELL_CACHE);
+  const hit = await cache.match(req, { ignoreSearch: true });
+  const update = fetch(req).then((resp) => {
+    if (resp.ok) cache.put(req, resp.clone());
+    return resp;
+  });
+  if (hit) {
+    event.waitUntil(update.catch(() => {}));
+    return hit;
+  }
+  return update;
+}
+
+self.addEventListener('fetch', (e) => {
+  const req = e.request;
+  const url = new URL(req.url);
+  if (req.method !== 'GET' || url.origin !== location.origin) return;
+  const isData = url.pathname.includes('/vendor/imgly-data/') && !url.pathname.endsWith('.json');
+  e.respondWith(
+    (isData ? cacheFirst(req) : staleWhileRevalidate(req, e))
+      .then(withIsolation)
+      .catch(() => caches.match('index.html').then(withIsolation))
+  );
+});

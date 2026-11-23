@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ranca Fundo</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235b4cf0'/%3E%3Cpath d='M9 22l5-7 4 5 3-3 4 5z' fill='white'/%3E%3Ccircle cx='21' cy='11' r='2.5' fill='white'/%3E%3C/svg%3E">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="theme-color" content="#5b4cf0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Ranca Fundo">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="splash-open">
+  <!-- Tela de abertura -->
+  <div class="splash" id="splash" role="dialog" aria-modal="true" aria-label="Boas-vindas">
+    <div class="hearts" aria-hidden="true">
+      <i style="--x:8%;--d:9s;--w:0s;--s:18px"></i>
+      <i style="--x:20%;--d:11s;--w:3s;--s:12px"></i>
+      <i style="--x:33%;--d:8s;--w:1.5s;--s:22px"></i>
+      <i style="--x:48%;--d:12s;--w:5s;--s:14px"></i>
+      <i style="--x:62%;--d:9.5s;--w:.5s;--s:20px"></i>
+      <i style="--x:75%;--d:10.5s;--w:2.5s;--s:12px"></i>
+      <i style="--x:88%;--d:8.5s;--w:4s;--s:24px"></i>
+      <i style="--x:95%;--d:13s;--w:6s;--s:14px"></i>
+    </div>
+    <div class="splash-card">
+      <div class="splash-photo">
+        <img src="img/mozao.png" alt="Foto do Mozão" width="480" height="599">
+      </div>
+      <p class="splash-msg">
+        Feito pelo <strong>Mozão</strong> para sua esposa linda, com muito carinho
+        <svg class="heart-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.7 4.5c2.1 0 3.6 1.2 4.3 2.4h2c.7-1.2 2.2-2.4 4.3-2.4 3.7 0 5.8 3.9 4.3 7.3C19.5 16.4 12 21 12 21z"/></svg>
+      </p>
+      <div class="brand splash-brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32"><rect width="32" height="32" rx="8"/><path d="M9 22l5-7 4 5 3-3 4 5z"/><circle cx="21" cy="11" r="2.5"/></svg>
+        </span>
+        Ranca-Fundo
+      </div>
+      <button class="btn btn-primary btn-lg splash-btn" id="splashBtn" type="button">Começar</button>
+    </div>
+  </div>
+
+  <header class="topbar">
+    <a class="brand" href="./">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" rx="8"/><path d="M9 22l5-7 4 5 3-3 4 5z"/><circle cx="21" cy="11" r="2.5"/></svg>
+      </span>
+      Ranca Fundo
+    </a>
+    <span class="pill">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5z"/></svg>
+      Offline · suas imagens não saem do computador
+    </span>
+  </header>
+
+  <main>
+    <!-- Tela inicial -->
+    <section id="home" class="hero">
+      <div class="hero-text">
+        <h1>Remova o fundo de imagens</h1>
+        <p class="lead">Envie uma foto e receba um <strong>PNG transparente</strong> em segundos. A IA roda no seu navegador, sem internet e sem enviar nada para servidores.</p>
+        <ul class="checks">
+          <li>Funciona com pessoas, produtos, animais e objetos</li>
+          <li>Mantém a resolução original</li>
+          <li>Troque o fundo por uma cor antes de baixar</li>
+        </ul>
+      </div>
+
+      <div class="upload-card" id="dropzone">
+        <div class="upload-inner">
+          <svg class="upload-icon" viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="10" width="36" height="28" rx="5"/><path d="M12 32l8-10 6 7 4-4 6 7"/><circle cx="32" cy="18" r="3"/></svg>
+          <button class="btn btn-primary btn-lg" id="pickBtn" type="button">Enviar imagem</button>
+          <p class="hint only-desktop">ou arraste um arquivo aqui<br>ou cole com <kbd>Ctrl</kbd> + <kbd>V</kbd></p>
+          <p class="hint only-touch">Escolha uma foto da galeria ou tire uma na hora</p>
+          <p class="formats">PNG, JPG, WEBP, BMP, GIF</p>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" multiple hidden>
+      </div>
+    </section>
+
+    <!-- Editor -->
+    <section id="editor" class="editor" hidden>
+      <div class="stage-wrap">
+        <div class="stage" id="stage">
+          <img id="imgResult" alt="Imagem sem fundo">
+          <img id="imgOriginal" alt="Imagem original">
+          <div class="divider" id="divider"><span></span></div>
+          <input type="range" id="compare" min="0" max="100" value="0" aria-label="Comparar antes e depois">
+          <span class="tag tag-left">Antes</span>
+          <span class="tag tag-right">Depois</span>
+          <div class="busy" id="busy">
+            <div class="spinner"></div>
+            <p id="busyText">Processando…</p>
+            <div class="bar"><div id="busyBar"></div></div>
+          </div>
+        </div>
+        <p class="stage-hint">Arraste a barra sobre a imagem para comparar antes e depois.</p>
+      </div>
+
+      <aside class="panel">
+        <div class="group">
+          <h2>Método</h2>
+          <div class="seg" role="radiogroup" id="modeSeg">
+            <button type="button" data-mode="ai" class="active">IA</button>
+            <button type="button" data-mode="solid">Cor sólida</button>
+          </div>
+
+          <div id="aiOptions">
+            <label class="field">Qualidade
+              <select id="model">
+                <option value="isnet_fp16">Alta (recomendado)</option>
+                <option value="isnet_quint8">Rápida</option>
+              </select>
+            </label>
+            <label class="check" id="gpuRow" hidden>
+              <input type="checkbox" id="gpu"> Acelerar com GPU (WebGPU)
+            </label>
+          </div>
+
+          <div id="solidOptions" hidden>
+            <label class="field">Tolerância <output id="tolOut">40</output>
+              <input type="range" id="tolerance" min="5" max="150" value="40">
+            </label>
+            <p class="small">Ideal para fundos lisos (branco, verde, estúdio). Remove a cor que toca as bordas da imagem.</p>
+          </div>
+        </div>
+
+        <div class="group">
+          <h2>Borda <output id="edgeOut" class="edge-out">Original</output></h2>
+          <input type="range" id="edge" min="-10" max="20" step="1" value="0" aria-label="Suavidade da borda">
+          <div class="range-labels"><span>Nítida</span><span>Original</span><span>Suave</span></div>
+        </div>
+
+        <div class="group">
+          <h2>Fundo</h2>
+          <div class="swatches" id="swatches">
+            <button type="button" class="sw sw-none active" data-color="" title="Transparente"></button>
+            <button type="button" class="sw" data-color="#ffffff" style="--c:#ffffff" title="Branco"></button>
+            <button type="button" class="sw" data-color="#000000" style="--c:#000000" title="Preto"></button>
+            <button type="button" class="sw" data-color="#e8e2d6" style="--c:#e8e2d6" title="Bege"></button>
+            <button type="button" class="sw" data-color="#3b82f6" style="--c:#3b82f6" title="Azul"></button>
+            <button type="button" class="sw" data-color="#22c55e" style="--c:#22c55e" title="Verde"></button>
+            <button type="button" class="sw" data-color="#ef4444" style="--c:#ef4444" title="Vermelho"></button>
+            <label class="sw sw-custom" title="Escolher cor">
+              <input type="color" id="customColor" value="#facc15">
+            </label>
+          </div>
+        </div>
+
+        <div class="group actions">
+          <button class="btn btn-primary btn-lg" id="downloadBtn" type="button" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+            Baixar PNG
+          </button>
+          <button class="btn btn-soft" id="shareBtn" type="button" hidden disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m0 0L8 7m4-4l4 4M6 11H5a1 1 0 00-1 1v8a1 1 0 001 1h14a1 1 0 001-1v-8a1 1 0 00-1-1h-1"/></svg>
+            Salvar / Compartilhar
+          </button>
+          <p class="small center" id="sizeInfo"></p>
+          <button class="btn btn-ghost" id="newBtn" type="button">Nova imagem</button>
+        </div>
+      </aside>
+
+      <div class="history" id="history" aria-label="Imagens desta sessão"></div>
+    </section>
+
+    <div class="notice" id="notice" hidden></div>
+  </main>
+
+  <div class="drop-overlay" id="dropOverlay"><p>Solte a imagem aqui</p></div>
+
+  <script src="solid.js"></script>
+  <script src="edges.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

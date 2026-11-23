@@ -1,0 +1,2 @@
+# Arquivos do modelo/wasm não podem ser alterados (conversão de fim de linha os corromperia)
+vendor/** -text
