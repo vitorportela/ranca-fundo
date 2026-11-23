@@ -7,9 +7,7 @@
     fileInput: $('fileInput'), pickBtn: $('pickBtn'),
     stage: $('stage'), imgResult: $('imgResult'), imgOriginal: $('imgOriginal'),
     compare: $('compare'), busyText: $('busyText'), busyBar: $('busyBar'),
-    modeSeg: $('modeSeg'), aiOptions: $('aiOptions'), solidOptions: $('solidOptions'),
     model: $('model'), gpu: $('gpu'), gpuRow: $('gpuRow'),
-    tolerance: $('tolerance'), tolOut: $('tolOut'),
     swatches: $('swatches'), customColor: $('customColor'),
     downloadBtn: $('downloadBtn'), newBtn: $('newBtn'), sizeInfo: $('sizeInfo'),
     history: $('history'), notice: $('notice'),
@@ -26,7 +24,6 @@
   el.edgeOut = $('edgeOut');
 
   const state = {
-    mode: AI_AVAILABLE ? 'ai' : 'solid',
     bgColor: '',
     items: [],
     current: null,
@@ -41,15 +38,13 @@
       const p = JSON.parse(localStorage.getItem('rancaFundoPrefs') || '{}');
       if (IS_MOBILE) el.model.value = 'isnet_quint8'; // modelo leve por padrão no celular
       if (p.model) el.model.value = p.model;
-      if (p.mode && (p.mode === 'solid' || AI_AVAILABLE)) state.mode = p.mode;
-      if (p.tolerance) el.tolerance.value = p.tolerance;
       if (p.edge != null) el.edge.value = p.edge;
     } catch { /* sem armazenamento: usa padrões */ }
   }
   function savePrefs() {
     try {
       localStorage.setItem('rancaFundoPrefs', JSON.stringify({
-        model: el.model.value, mode: state.mode, tolerance: el.tolerance.value, edge: el.edge.value,
+        model: el.model.value, edge: el.edge.value,
       }));
     } catch { /* ignorado */ }
   }
@@ -124,7 +119,7 @@
       item.status = 'processing';
       if (item === state.current) renderStage();
       try {
-        const blob = state.mode === 'ai' ? await processAI(item) : await processSolid(item);
+        const blob = await processAI(item);
         if (item.status !== 'processing') continue; // reenfileirado enquanto processava
         item.rawBlob = blob;
         item.edgeValue = null;
@@ -285,27 +280,6 @@
     return item.input;
   }
 
-  /* ---------------- Cor sólida ---------------- */
-  async function decode(item) {
-    const bmp = await createImageBitmap(await prepareInput(item));
-    item.w = bmp.width; item.h = bmp.height;
-    return bmp;
-  }
-
-  async function processSolid(item) {
-    setBusy('Removendo o fundo…', 50);
-    await new Promise((r) => setTimeout(r, 30)); // deixa a tela atualizar
-    const bmp = await decode(item);
-    const canvas = document.createElement('canvas');
-    canvas.width = bmp.width; canvas.height = bmp.height;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    ctx.drawImage(bmp, 0, 0);
-    bmp.close();
-    const src = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    ctx.putImageData(window.removeSolidBackground(src, +el.tolerance.value), 0, 0);
-    return new Promise((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error('falha ao gerar PNG'))), 'image/png'));
-  }
-
   /* ---------------- Tela ---------------- */
   function showEditor() {
     closeSplash(); // se ela colar/arrastar uma imagem com a abertura na tela
@@ -417,39 +391,12 @@
   }
 
   /* ---------------- Opções ---------------- */
-  function applyMode() {
-    for (const b of el.modeSeg.querySelectorAll('button')) {
-      b.classList.toggle('active', b.dataset.mode === state.mode);
-      if (b.dataset.mode === 'ai' && !AI_AVAILABLE) {
-        b.disabled = true;
-        b.title = 'Abra o site pelo iniciar.bat para usar a IA';
-      }
-    }
-    el.aiOptions.hidden = state.mode !== 'ai';
-    el.solidOptions.hidden = state.mode !== 'solid';
-  }
-
   function reprocessCurrent() {
     savePrefs();
     if (state.current) enqueue(state.current);
   }
-
-  el.modeSeg.addEventListener('click', (e) => {
-    const b = e.target.closest('button[data-mode]');
-    if (!b || b.disabled || b.dataset.mode === state.mode) return;
-    state.mode = b.dataset.mode;
-    applyMode();
-    reprocessCurrent();
-  });
   el.model.addEventListener('change', reprocessCurrent);
   el.gpu.addEventListener('change', reprocessCurrent);
-
-  let tolTimer;
-  el.tolerance.addEventListener('input', () => {
-    el.tolOut.textContent = el.tolerance.value;
-    clearTimeout(tolTimer);
-    tolTimer = setTimeout(reprocessCurrent, 250);
-  });
 
   function setBg(color, btn) {
     state.bgColor = color;
@@ -553,10 +500,8 @@
 
   /* ---------------- Início ---------------- */
   loadPrefs();
-  el.tolOut.textContent = el.tolerance.value;
   updateEdgeLabel();
   el.gpuRow.hidden = !('gpu' in navigator) || !AI_AVAILABLE;
-  applyMode();
 
   if ('serviceWorker' in navigator && window.isSecureContext && AI_AVAILABLE) {
     navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW não registrado', e));
@@ -564,7 +509,8 @@
   }
 
   if (!AI_AVAILABLE) {
-    notify('Aberto como arquivo: só o método "Cor sólida" funciona. Para usar a IA, abra o site pelo iniciar.bat.', false, 12000);
+    notify('Aberto como arquivo, a IA não consegue carregar. Abra o site pelo iniciar.bat ou pelo link publicado.', true, 15000);
+    el.pickBtn.disabled = true;
   } else {
     // pré-carrega a biblioteca em segundo plano para o primeiro uso ser mais rápido
     loadLib().catch(() => {});

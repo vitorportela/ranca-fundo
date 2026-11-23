@@ -114,30 +114,16 @@
 
       <aside class="panel">
         <div class="group">
-          <h2>Método</h2>
-          <div class="seg" role="radiogroup" id="modeSeg">
-            <button type="button" data-mode="ai" class="active">IA</button>
-            <button type="button" data-mode="solid">Cor sólida</button>
-          </div>
-
-          <div id="aiOptions">
-            <label class="field">Qualidade
-              <select id="model">
-                <option value="isnet_fp16">Alta (recomendado)</option>
-                <option value="isnet_quint8">Rápida</option>
-              </select>
-            </label>
-            <label class="check" id="gpuRow" hidden>
-              <input type="checkbox" id="gpu"> Acelerar com GPU (WebGPU)
-            </label>
-          </div>
-
-          <div id="solidOptions" hidden>
-            <label class="field">Tolerância <output id="tolOut">40</output>
-              <input type="range" id="tolerance" min="5" max="150" value="40">
-            </label>
-            <p class="small">Ideal para fundos lisos (branco, verde, estúdio). Remove a cor que toca as bordas da imagem.</p>
-          </div>
+          <h2>Qualidade</h2>
+          <label class="field">
+            <select id="model" aria-label="Qualidade do recorte">
+              <option value="isnet_fp16">Alta (recomendado)</option>
+              <option value="isnet_quint8">Rápida</option>
+            </select>
+          </label>
+          <label class="check" id="gpuRow" hidden>
+            <input type="checkbox" id="gpu"> Acelerar com GPU (WebGPU)
+          </label>
         </div>
 
         <div class="group">
@@ -184,7 +170,6 @@
 
   <div class="drop-overlay" id="dropOverlay"><p>Solte a imagem aqui</p></div>
 
-  <script src="solid.js"></script>
   <script src="edges.js"></script>
   <script src="app.js"></script>
 </body>
