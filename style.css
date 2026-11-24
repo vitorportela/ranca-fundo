@@ -510,6 +510,14 @@ body.modal-open { overflow: hidden; }
 .card-canvas { height: min(72vh, 680px); touch-action: none; cursor: grab; }
 .card-canvas:active { cursor: grabbing; }
 
+/* ---------- Retoque ---------- */
+.wide-btn { width: 100%; padding: 10px 16px; }
+.seg-ico span { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.seg-ico svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.retouch-canvas, .retouch-canvas:active { cursor: crosshair; }
+.retouch-canvas.pan-ready { cursor: grab; }
+.retouch-canvas.panning { cursor: grabbing; }
+
 /* ---------- Responsivo ---------- */
 @media (max-width: 900px) {
   .hero { grid-template-columns: 1fr; min-height: 0; padding-top: 16px; }
@@ -520,4 +528,10 @@ body.modal-open { overflow: hidden; }
   .card-canvas { height: 58vh; }
   .modal { padding: 0; }
   .modal-card { max-height: 100vh; height: 100%; border-radius: 0; }
+}
+@media (max-width: 900px) {
+  .retouch-canvas { height: 46vh; }
+  #retouch .poster-body { gap: 12px; padding: 12px 16px; }
+  #retouch .poster-form { gap: 14px; }
+  #retouch .group h2 { margin-bottom: 6px; }
 }

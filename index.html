@@ -142,6 +142,15 @@
         </div>
 
         <div class="group">
+          <h2>Retoque</h2>
+          <button class="btn btn-soft wide-btn" id="retouchBtn" type="button" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/></svg>
+            Retocar com lápis
+          </button>
+          <p class="small hint-gap" id="retouchInfo"></p>
+        </div>
+
+        <div class="group">
           <h2>Fundo</h2>
           <div class="swatches" id="swatches">
             <button type="button" class="sw sw-none active" data-color="" title="Transparente"></button>
@@ -370,7 +379,67 @@
     <input type="file" id="cInput" accept="image/*" multiple hidden>
   </div>
 
+  <!-- Retoque com lápis -->
+  <div class="modal" id="retouch" role="dialog" aria-modal="true" aria-labelledby="rtTitle" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2 id="rtTitle">Retocar com lápis</h2>
+        <button class="icon-btn" id="rtClose" type="button" aria-label="Fechar">×</button>
+      </div>
+      <div class="poster-body">
+        <div class="poster-form">
+          <div class="group">
+            <h2>Lápis</h2>
+            <div class="seg seg-ico" role="radiogroup" aria-label="Tipo de lápis">
+              <label><input type="radio" name="rtTool" id="rtPencil" value="pencil" checked><span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/></svg>Lápis</span></label>
+              <label><input type="radio" name="rtTool" id="rtMagic" value="magic"><span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20L15 9"/><path d="M17 3v4M15 5h4M20 10v2M19 11h2M10 3v2M9 4h2"/></svg>Lápis mágico</span></label>
+            </div>
+          </div>
+          <div class="group">
+            <h2>O lápis vai</h2>
+            <div class="seg" role="radiogroup" aria-label="O que o lápis faz">
+              <label><input type="radio" name="rtMode" id="rtCut" value="cut" checked><span>Tirar</span></label>
+              <label><input type="radio" name="rtMode" id="rtKeep" value="keep"><span>Trazer de volta</span></label>
+            </div>
+            <p class="small hint-gap" id="rtToolHint"></p>
+          </div>
+          <div class="group">
+            <label class="field" id="rtSizeBox">
+              <span class="field-top">Tamanho do lápis <output id="rtSizeOut"></output></span>
+              <input type="range" id="rtSize" min="4" max="150" step="1" value="40">
+            </label>
+            <label class="field" id="rtTolBox" hidden>
+              <span class="field-top">Alcance <output id="rtTolOut"></output></span>
+              <input type="range" id="rtTol" min="1" max="100" step="1" value="35">
+            </label>
+            <label class="check"><input type="checkbox" id="rtGhost" checked> Mostrar clarinho o que saiu</label>
+          </div>
+          <div class="group">
+            <div class="btn-row">
+              <button class="btn btn-soft btn-sm" id="rtUndo" type="button" disabled>Desfazer</button>
+              <button class="btn btn-soft btn-sm" id="rtRedo" type="button" disabled>Refazer</button>
+              <button class="btn btn-soft btn-sm" id="rtFit" type="button">Ver tudo</button>
+            </div>
+            <button class="btn btn-soft btn-sm wide" id="rtClear" type="button" disabled>Apagar todos os retoques</button>
+          </div>
+        </div>
+        <div class="poster-preview">
+          <canvas id="rtCanvas" class="poster-canvas card-canvas retouch-canvas" aria-label="Imagem para retocar"></canvas>
+          <p class="small center hint-gap" id="rtHint"></p>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <p class="small" id="rtStatus" aria-live="polite"></p>
+        <button class="btn btn-soft" id="rtCancel" type="button">Cancelar</button>
+        <button class="btn btn-primary" id="rtDone" type="button">Pronto</button>
+      </div>
+    </div>
+  </div>
+
   <script src="edges.js"></script>
+  <script src="retouch.js"></script>
   <script src="upscale.js"></script>
   <script src="poster.js"></script>
   <script src="cards.js"></script>

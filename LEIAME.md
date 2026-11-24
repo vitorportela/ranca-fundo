@@ -13,6 +13,19 @@ modelo de IA em páginas `file://`. Use o `iniciar.bat` ou o link publicado.
 
 **Publicado em:** <https://vitorportela.github.io/ranca-fundo/>
 
+## Retocar com lápis
+
+Quando a IA tira demais ou de menos, use **Retocar com lápis** no editor:
+
+- **Lápis**: pinta exatamente por onde passa.
+- **Lápis mágico**: basta um risco em cima; o app pega a parte de cor parecida ligada ao risco.
+  O **Alcance** controla o quanto ele se espalha.
+- Os dois podem **Tirar** ou **Trazer de volta** o que a IA tirou por engano.
+- Desfazer (Ctrl+Z) e Refazer; zoom com a roda do mouse ou com dois dedos.
+
+Os retoques ficam guardados por cima do recorte: mudar a borda ou a qualidade não apaga o que foi riscado.
+Eles valem para o PNG, o pôster e o foto card.
+
 ## Pôster em várias folhas
 
 **Imprimir como pôster** divide a imagem em várias folhas (A4, A3, Carta ou Ofício) e gera um PDF para
@@ -98,6 +111,7 @@ ajusta a suavidade do recorte sem rodar a IA de novo.
 |---|---|
 | `index.html`, `style.css`, `app.js` | Interface |
 | `edges.js` | Ajuste de suavidade da borda |
+| `retouch.js` | Retoque com lápis e lápis mágico |
 | `poster.js` | Pôster em várias folhas e geração do PDF |
 | `cards.js` | Foto cards (9 por folha, frente e verso) |
 | `upscale.js`, `vendor/upscale/` | Ampliação (Lanczos e IA Real-ESRGAN, licença BSD-3) |

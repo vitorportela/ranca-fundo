@@ -27,6 +27,8 @@
   el.cardBtn = $('cardBtn');
   el.edge = $('edge');
   el.edgeOut = $('edgeOut');
+  el.retouchBtn = $('retouchBtn');
+  el.retouchInfo = $('retouchInfo');
 
   const state = {
     bgColor: '',
@@ -116,6 +118,7 @@
 
   // Com o pôster ou os foto cards abertos, a imagem arrastada/colada vai para a janela.
   function modalTakesFiles(files) {
+    if (window.RancaRetouch.isOpen()) return true; // no retoque, ignora
     if (window.RancaCards.isOpen()) { window.RancaCards.addFiles(files); return true; }
     if (!window.RancaPoster.isOpen()) return false;
     const img = [...files].find((f) => f.type.startsWith('image/'));
@@ -154,9 +157,13 @@
         }
       } catch (err) {
         console.error(err);
+        aiAttempt++;
         item.status = 'error';
         if (item === state.current) renderStage();
-        notify('Não foi possível processar "' + item.name + '": ' + (err?.message || err), true, 8000);
+        const msg = String(err?.message || err);
+        notify(/fetch|network|rede/i.test(msg)
+          ? 'Não consegui baixar o modelo de IA. No computador, abra o iniciar.bat (a janela preta precisa ficar aberta); no celular, confira a internet. Depois toque na miniatura da imagem (embaixo) para tentar de novo.'
+          : 'Não foi possível processar "' + item.name + '": ' + msg, true, 12000);
       }
       renderHistory();
     }
@@ -166,26 +173,50 @@
   /* ---------------- Borda ---------------- */
   // Gera resultBlob a partir do recorte bruto (rawBlob) com a suavidade escolhida.
   // strict = descarta o resultado se o slider mudou enquanto calculava.
+  // Depois da borda entram os retoques do lápis (item.edits), se houver.
   async function applyEdges(item, strict) {
     const v = +el.edge.value;
     if (item.edgeValue === v) return;
+    const edits = item.edits;
     let blob = item.rawBlob;
-    if (v) {
-      const bmp = await createImageBitmap(item.rawBlob);
-      const c = document.createElement('canvas');
-      c.width = bmp.width; c.height = bmp.height;
-      const ctx = c.getContext('2d', { willReadFrequently: true });
-      ctx.drawImage(bmp, 0, 0);
-      bmp.close();
-      const img = ctx.getImageData(0, 0, c.width, c.height);
-      ctx.putImageData(window.adjustEdges(img, v), 0, 0);
-      blob = await new Promise((r) => c.toBlob(r, 'image/png'));
+    if (v || edits) {
+      const { ctx, w, h } = await decodeRaw(item);
+      const img = ctx.getImageData(0, 0, w, h);
+      if (v) window.adjustEdges(img, v);
+      if (edits && edits.length === w * h) {
+        window.RancaRetouch.apply(img.data, (await origPixels(item, w, h)).data, edits);
+      }
+      ctx.putImageData(img, 0, 0);
+      blob = await new Promise((r) => ctx.canvas.toBlob(r, 'image/png'));
     }
     if (strict && +el.edge.value !== v) return;
     if (item.resultUrl) URL.revokeObjectURL(item.resultUrl);
     item.resultBlob = blob;
     item.resultUrl = URL.createObjectURL(blob);
     item.edgeValue = v;
+  }
+
+  // Recorte da IA num canvas (sem borda nem retoque).
+  async function decodeRaw(item) {
+    const bmp = await createImageBitmap(item.rawBlob);
+    const c = document.createElement('canvas');
+    c.width = bmp.width; c.height = bmp.height;
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(bmp, 0, 0);
+    bmp.close();
+    return { ctx, w: c.width, h: c.height };
+  }
+
+  // Pixels da foto original no tamanho do recorte (para trazer de volta o que a IA tirou).
+  async function origPixels(item, w, h) {
+    const bmp = await createImageBitmap(item.input || item.file);
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(bmp, 0, 0, w, h);
+    bmp.close();
+    return ctx.getImageData(0, 0, w, h);
   }
 
   async function refreshEdges() {
@@ -227,8 +258,12 @@
     return libPromise;
   }
 
+  // A biblioteca guarda (memoize) o carregamento do modelo pela config, inclusive quando falha.
+  // Mudar "tentativa" depois de um erro força baixar de novo em vez de repetir o erro guardado.
+  let aiAttempt = 0;
   function aiConfig(device) {
     return {
+      tentativa: aiAttempt,
       publicPath: DATA_PATH,
       model: el.model.value,
       device,
@@ -310,6 +345,7 @@
   }
 
   function select(item) {
+    if (item === state.current && item.status === 'error') { enqueue(item); return; } // tenta de novo
     state.current = item;
     renderStage();
     renderHistory();
@@ -365,6 +401,8 @@
     }
     if (item.status === 'error') setPos(100);
 
+    el.retouchBtn.disabled = item.status !== 'done';
+    el.retouchInfo.textContent = item.edits ? 'Esta imagem tem retoques.' : '';
     el.downloadBtn.disabled = item.status !== 'done';
     el.shareBtn.disabled = item.status !== 'done';
     el.posterBtn.disabled = false; // dá para fazer pôster da foto original antes de tirar o fundo
@@ -437,6 +475,36 @@
     const lbl = el.customColor.closest('.sw');
     lbl.style.background = el.customColor.value;
     setBg(el.customColor.value, lbl);
+  });
+
+  /* ---------------- Retoque com lápis ---------------- */
+  el.retouchBtn.addEventListener('click', async () => {
+    const item = state.current;
+    if (!item || item.status !== 'done' || el.retouchBtn.dataset.busy) return;
+    el.retouchBtn.dataset.busy = '1';
+    let opts;
+    try {
+      // a prévia do retoque usa a borda escolhida, igual ao resultado final
+      const { ctx, w, h } = await decodeRaw(item);
+      const img = ctx.getImageData(0, 0, w, h);
+      const v = +el.edge.value;
+      if (v) window.adjustEdges(img, v);
+      const base = new Uint8Array(w * h);
+      for (let p = 0; p < base.length; p++) base[p] = img.data[p * 4 + 3];
+      const orig = await origPixels(item, w, h);
+      opts = { w, h, orig, base, edits: item.edits && item.edits.length === w * h ? item.edits : null };
+    } catch (err) {
+      notify('Não foi possível abrir o retoque: ' + (err?.message || err), true);
+      return;
+    } finally {
+      delete el.retouchBtn.dataset.busy;
+    }
+    const edits = await window.RancaRetouch.open(opts);
+    if (edits === undefined) return; // cancelou
+    item.edits = edits;
+    item.edgeValue = null; // força refazer o resultado
+    if (item === state.current) refreshEdges();
+    else applyEdges(item, false).then(renderHistory).catch(console.error);
   });
 
   /* ---------------- Download ---------------- */

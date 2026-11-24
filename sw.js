@@ -2,12 +2,12 @@
 // - Guarda o site e o modelo de IA no aparelho para funcionar sem internet.
 // - Acrescenta os cabeçalhos COOP/COEP (necessários para a IA usar vários núcleos),
 //   já que hospedagens como o GitHub Pages não permitem configurá-los.
-const VERSION = 'v8';
+const VERSION = 'v9';
 const SHELL_CACHE = 'shell-' + VERSION;
 const DATA_CACHE = 'data-v1'; // modelo e wasm (arquivos imutáveis, nomeados por hash)
 
 const SHELL = [
-  './', 'index.html', 'style.css', 'app.js', 'edges.js', 'poster.js', 'cards.js', 'upscale.js', 'manifest.webmanifest',
+  './', 'index.html', 'style.css', 'app.js', 'edges.js', 'poster.js', 'cards.js', 'retouch.js', 'upscale.js', 'manifest.webmanifest',
   'img/mozao.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
   'vendor/background-removal.js', 'vendor/imgly-data/resources.json',
 ];
@@ -78,9 +78,15 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET' || url.origin !== location.origin) return;
   const isData = (url.pathname.includes('/vendor/imgly-data/') && !url.pathname.endsWith('.json')) ||
     url.pathname.includes('/vendor/upscale/');
+  // Sem rede e sem cópia guardada: só a abertura da página cai no index.html.
+  // Para os outros arquivos (como o modelo), a falha segue como erro de rede,
+  // senão a IA recebe o HTML no lugar do arquivo e dá um erro sem sentido.
   e.respondWith(
     (isData ? cacheFirst(req) : staleWhileRevalidate(req, e))
       .then(withIsolation)
-      .catch(() => caches.match('index.html').then(withIsolation))
+      .catch((err) => {
+        if (req.mode !== 'navigate') throw err;
+        return caches.match('index.html').then(withIsolation);
+      })
   );
 });
