@@ -23,6 +23,8 @@
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   // memória máxima guardada para "Desfazer"
   const UNDO_BYTES = IS_MOBILE ? 60e6 : 200e6;
+  const MAIN_COLOR_SHARE = 0.2; // lápis mágico: cor que aparece em menos que isso do risco não conta
+  const BIG_REGION = 0.4; // lápis mágico pergunta antes de mexer em mais que isso da imagem
 
   /* ---------------- Aplicação (usada também pelo app.js) ---------------- */
   function alphaOf(b, e) {
@@ -52,9 +54,10 @@
   let edits = null;   // Int8Array: retoques
   let img = null;     // ImageData mostrado (RGB da original + transparência retocada)
   let work = null, workCtx = null; // canvas com img
-  let ghostCv = null; // canvas com a foto original (para mostrar clarinho o que saiu)
+  let ghostCv = null; // foto original pintada de vermelho com listras (mostra o que vai sair)
   let scov = null;    // Uint8Array: cobertura do risco atual (0 = ainda não tocado)
   let reg = null;     // Uint8Array: região do lápis mágico
+  let soft = null;    // Uint8ClampedArray RGBA: foto levemente desfocada (lápis mágico)
   let undoStack = [], redoStack = [];
   let dirty = false;  // houve mudança desde que abriu
   let resolveOpen = null;
@@ -169,9 +172,44 @@
     return ((2 + rm / 256) * dr * dr + 4 * dg * dg + (2 + (255 - rm) / 256) * db * db) / 3;
   }
 
+  // Quanto a cor pode mudar de um pixel para o vizinho sem parar o preenchimento.
+  // É o que segura o lápis mágico nas bordas (sem isso, numa foto, ele vazava para a imagem toda).
+  function stepTolerance() { return 4 + prefs.tol * 0.17; }
+
+  // Foto levemente desfocada (caixa 3x3, RGBA). Assim a textura de tecido, cabelo e ruído
+  // não conta como borda. Feita na primeira vez que o lápis mágico é usado.
+  function softPixels() {
+    if (soft) return soft;
+    const t = new Uint16Array(W * H * 3);
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const xa = Math.max(0, x - 1), xb = Math.min(W - 1, x + 1);
+        for (let c = 0; c < 3; c++) {
+          let s = 0;
+          for (let xx = xa; xx <= xb; xx++) s += orig[(y * W + xx) * 4 + c];
+          t[(y * W + x) * 3 + c] = (s * 64) / (xb - xa + 1);
+        }
+      }
+    }
+    soft = new Uint8ClampedArray(W * H * 4);
+    for (let y = 0; y < H; y++) {
+      const ya = Math.max(0, y - 1), yb = Math.min(H - 1, y + 1);
+      for (let x = 0; x < W; x++) {
+        for (let c = 0; c < 3; c++) {
+          let s = 0;
+          for (let yy = ya; yy <= yb; yy++) s += t[(yy * W + x) * 3 + c];
+          soft[(y * W + x) * 4 + c] = s / 64 / (yb - ya + 1);
+        }
+      }
+    }
+    return soft;
+  }
+
+  // Devolve quantos pixels pegou, ou -1 se a pessoa desistiu (região grande demais).
   function magicFill(pts) {
     const tol = tolerance(), tol2 = tol * tol, T = target();
-    const o = orig;
+    const st = stepTolerance(), st2 = st * st;
+    const o = softPixels();
     // pixels debaixo do risco
     const seeds = [];
     const seen = new Set();
@@ -186,28 +224,40 @@
       }
     }
     if (!seeds.length) return 0;
-    // cores de referência (média 3x3 de cada ponto, agrupadas)
-    const ref = [];
+    // Cor principal do risco: agrupa as cores debaixo dele e fica só com os grupos que
+    // aparecem numa boa parte do risco. Se o risco encostou de leve numa área de outra cor
+    // (ex.: risco no cinza que raspou no preto), essa outra cor não conta.
     const groupTol2 = tol2 * 0.12;
     const stepS = Math.max(1, Math.floor(seeds.length / 1500));
-    for (let s = 0; s < seeds.length && ref.length < 64 * 3; s += stepS) {
-      const i = seeds[s], y = (i / W) | 0, x = i - y * W;
-      let r = 0, g = 0, b = 0, c = 0;
-      for (let yy = Math.max(0, y - 1); yy <= Math.min(H - 1, y + 1); yy++) {
-        for (let xx = Math.max(0, x - 1); xx <= Math.min(W - 1, x + 1); xx++) {
-          const q = (yy * W + xx) * 4; r += o[q]; g += o[q + 1]; b += o[q + 2]; c++;
-        }
+    const groups = []; // [r, g, b, quantos]
+    let sampled = 0;
+    for (let s = 0; s < seeds.length; s += stepS) {
+      const q = seeds[s] * 4, r = o[q], g = o[q + 1], b = o[q + 2];
+      sampled++;
+      let best = null, bestD = groupTol2;
+      for (const gr of groups) {
+        const d = colorDist2(r, g, b, gr[0], gr[1], gr[2]);
+        if (d < bestD) { bestD = d; best = gr; }
       }
-      r /= c; g /= c; b /= c;
-      let near = false;
-      for (let k = 0; k < ref.length; k += 3) {
-        if (colorDist2(r, g, b, ref[k], ref[k + 1], ref[k + 2]) < groupTol2) { near = true; break; }
-      }
-      if (!near) ref.push(r, g, b);
+      if (best) {
+        // média que vai andando, para o grupo representar bem as cores dele
+        const n = ++best[3];
+        best[0] += (r - best[0]) / n; best[1] += (g - best[1]) / n; best[2] += (b - best[2]) / n;
+      } else if (groups.length < 64) groups.push([r, g, b, 1]);
+    }
+    groups.sort((x, y) => y[3] - x[3]);
+    const ref = [];
+    for (const gr of groups) {
+      if (ref.length && gr[3] < sampled * MAIN_COLOR_SHARE) break;
+      ref.push(gr[0], gr[1], gr[2]);
     }
     const nref = ref.length;
-    const ok = (i) => {
+    // i entra se a cor for parecida com a do risco E não mudar de repente em relação a "from"
+    // (o vizinho que já está na região)
+    const ok = (i, from) => {
       const q = i * 4, r = o[q], g = o[q + 1], b = o[q + 2];
+      const p = from * 4;
+      if (colorDist2(r, g, b, o[p], o[p + 1], o[p + 2]) > st2) return false;
       for (let k = 0; k < nref; k += 3) if (colorDist2(r, g, b, ref[k], ref[k + 1], ref[k + 2]) <= tol2) return true;
       return false;
     };
@@ -220,26 +270,49 @@
       const y = (i / W) | 0, x = i - y * W;
       if (x < bx0) bx0 = x; if (x > bx1) bx1 = x; if (y < by0) by0 = y; if (y > by1) by1 = y;
     };
-    // o próprio risco sempre entra
-    for (const i of seeds) if (!reg[i]) { mark(i); stack.push(i); }
+    // debaixo do risco, só entra o que tem a cor principal
+    const likeRef = (i) => {
+      const q = i * 4, r = o[q], g = o[q + 1], b = o[q + 2];
+      for (let k = 0; k < nref; k += 3) if (colorDist2(r, g, b, ref[k], ref[k + 1], ref[k + 2]) <= tol2) return true;
+      return false;
+    };
+    for (const i of seeds) if (!reg[i] && likeRef(i)) { mark(i); stack.push(i); }
+    if (!count) return 0;
     // preenchimento por linhas a partir dos pontos do risco
     const spread = (i) => {
       const y = (i / W) | 0, x = i - y * W, row = y * W;
       let l = x, r = x;
-      while (l > 0 && !reg[row + l - 1] && ok(row + l - 1)) { l--; mark(row + l); }
-      while (r < W - 1 && !reg[row + r + 1] && ok(row + r + 1)) { r++; mark(row + r); }
+      while (l > 0 && !reg[row + l - 1] && ok(row + l - 1, row + l)) { l--; mark(row + l); }
+      while (r < W - 1 && !reg[row + r + 1] && ok(row + r + 1, row + r)) { r++; mark(row + r); }
       for (const ny of [y - 1, y + 1]) {
         if (ny < 0 || ny >= H) continue;
         const nrow = ny * W;
         let run = false;
         for (let k = l; k <= r; k++) {
           const j = nrow + k;
-          if (!reg[j] && ok(j)) { if (!run) { mark(j); stack.push(j); run = true; } } else run = false;
+          if (!reg[j] && ok(j, row + k)) { if (!run) { mark(j); stack.push(j); run = true; } } else run = false;
         }
       }
     };
     while (stack.length) spread(stack.pop());
 
+    // pegou muita coisa? pergunta antes (é fácil passar do ponto numa foto)
+    const big = count / (W * H);
+    if (big > BIG_REGION) {
+      const pct = Math.round(big * 100);
+      const what = T > 0 ? 'trazer de volta' : 'apagar';
+      if (!confirm(`O lápis mágico vai ${what} ${pct}% da imagem. Continuar?\n\nSe não era isso, cancele e diminua o Alcance.`)) {
+        for (let y = by0; y <= by1; y++) reg.fill(0, y * W + bx0, y * W + bx1 + 1);
+        return -1;
+      }
+    }
+
+    // beirada: só pixels de cor no meio do caminho (até 2x o Alcance), não uma cor bem diferente
+    const nearRef = (i) => {
+      const q = orig, p = i * 4;
+      for (let k = 0; k < nref; k += 3) if (colorDist2(q[p], q[p + 1], q[p + 2], ref[k], ref[k + 1], ref[k + 2]) <= tol2 * 4) return true;
+      return false;
+    };
     // aplica: região inteira com força total e uma beirada de 1 px pela metade (fica mais suave)
     const x0 = Math.max(0, bx0 - 1), y0 = Math.max(0, by0 - 1);
     const x1 = Math.min(W - 1, bx1 + 1), y1 = Math.min(H - 1, by1 + 1);
@@ -247,8 +320,8 @@
       for (let x = x0; x <= x1; x++) {
         const i = y * W + x;
         if (reg[i]) { touch(i, 255, T); continue; }
-        if ((x > 0 && reg[i - 1]) || (x < W - 1 && reg[i + 1]) ||
-            (y > 0 && reg[i - W]) || (y < H - 1 && reg[i + W])) touch(i, 128, T);
+        if (((x > 0 && reg[i - 1]) || (x < W - 1 && reg[i + 1]) ||
+            (y > 0 && reg[i - W]) || (y < H - 1 && reg[i + W])) && nearRef(i)) touch(i, 128, T);
       }
     }
     for (let y = by0; y <= by1; y++) reg.fill(0, y * W + bx0, y * W + bx1 + 1);
@@ -319,7 +392,7 @@
     g.imageSmoothingEnabled = view.s < 2;
     g.imageSmoothingQuality = 'high';
     if (prefs.ghost) {
-      g.globalAlpha = 0.28;
+      g.globalAlpha = 0.85;
       g.drawImage(ghostCv, 0, 0);
       g.globalAlpha = 1;
     }
@@ -458,7 +531,7 @@
       rec = newRec();
       const n = magicFill(s.pts);
       commit();
-      el.status.textContent = n ? '' : 'Risque em cima da imagem.';
+      el.status.textContent = n > 0 ? '' : n < 0 ? 'Cancelado. Diminua o Alcance e tente de novo.' : 'Risque em cima da imagem.';
     } catch (err) {
       console.error(err);
       rec = null;
@@ -534,6 +607,27 @@
     commit();
   });
 
+  // Versão da foto que aparece onde a imagem vai sair: a foto misturada com vermelho e
+  // listras na diagonal. Assim dá para ver bem o que vai ser tirado, mesmo numa foto vermelha.
+  function markRemoved(src) {
+    const out = new ImageData(W, H), s = src.data, d = out.data;
+    const period = Math.max(8, Math.round(Math.max(W, H) / 120));
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const i = (y * W + x) * 4;
+        const stripe = ((x + y) % period) < period / 2;
+        const lum = 0.3 * s[i] + 0.59 * s[i + 1] + 0.11 * s[i + 2];
+        const k = stripe ? 0.62 : 0.42; // quanto de vermelho entra
+        const r = stripe ? 235 : 200, g = stripe ? 35 : 20, b = stripe ? 60 : 45;
+        d[i] = lum * (1 - k) + r * k;
+        d[i + 1] = lum * (1 - k) * 0.55 + g * k;
+        d[i + 2] = lum * (1 - k) * 0.6 + b * k;
+        d[i + 3] = 255;
+      }
+    }
+    return out;
+  }
+
   /* ---------------- Abrir / fechar ---------------- */
   // opts: { w, h, orig: ImageData da foto original, base: Uint8Array (transparência), edits: Int8Array|null }
   // Resolve com os retoques (Int8Array, ou null se não sobrou nenhum) ou undefined se cancelar.
@@ -543,7 +637,7 @@
     base = opts.base;
     edits = opts.edits ? opts.edits.slice() : new Int8Array(W * H);
     scov = new Uint8Array(W * H);
-    reg = null;
+    reg = null; soft = null;
     undoStack = []; redoStack = []; rec = null; stroke = null; pan = null; pinch = null;
     dirty = false; busy = false;
 
@@ -555,7 +649,7 @@
     workCtx.putImageData(img, 0, 0);
     ghostCv = document.createElement('canvas');
     ghostCv.width = W; ghostCv.height = H;
-    ghostCv.getContext('2d').putImageData(opts.orig, 0, 0);
+    ghostCv.getContext('2d').putImageData(markRemoved(opts.orig), 0, 0);
 
     makeChecker();
     el.status.textContent = '';
@@ -574,7 +668,7 @@
     el.modal.hidden = true;
     document.body.classList.remove('modal-open');
     const r = resolveOpen; resolveOpen = null;
-    img = null; work = null; workCtx = null; ghostCv = null; scov = null; reg = null;
+    img = null; work = null; workCtx = null; ghostCv = null; scov = null; reg = null; soft = null;
     orig = null; base = null; undoStack = []; redoStack = [];
     const out = edits; edits = null;
     if (r) r(result === 'done' ? (hasEditsIn(out) ? out : null) : undefined);

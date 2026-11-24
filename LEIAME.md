@@ -18,9 +18,12 @@ modelo de IA em páginas `file://`. Use o `iniciar.bat` ou o link publicado.
 Quando a IA tira demais ou de menos, use **Retocar com lápis** no editor:
 
 - **Lápis**: pinta exatamente por onde passa.
-- **Lápis mágico**: basta um risco em cima; o app pega a parte de cor parecida ligada ao risco.
-  O **Alcance** controla o quanto ele se espalha.
+- **Lápis mágico**: basta um risco em cima; o app pega a parte com a cor principal do risco, ligada a ele.
+  Se o risco raspar numa área de outra cor (ex.: no preto ao lado do cinza), essa outra cor fica.
+  O **Alcance** controla o quanto ele se espalha. Ele para nas bordas (onde a cor muda de repente),
+  e, se for pegar mais de 40% da imagem, pergunta antes.
 - Os dois podem **Tirar** ou **Trazer de volta** o que a IA tirou por engano.
+- O que vai sair aparece **pintado de vermelho com listras** (dá para desligar em "Mostrar em vermelho o que vai sair").
 - Desfazer (Ctrl+Z) e Refazer; zoom com a roda do mouse ou com dois dedos.
 
 Os retoques ficam guardados por cima do recorte: mudar a borda ou a qualidade não apaga o que foi riscado.
