@@ -27,7 +27,7 @@ Quando a IA tira demais ou de menos, use **Retocar com lápis** no editor:
 - Desfazer (Ctrl+Z) e Refazer; zoom com a roda do mouse ou com dois dedos.
 
 Os retoques ficam guardados por cima do recorte: mudar a borda ou a qualidade não apaga o que foi riscado.
-Eles valem para o PNG, o pôster e o foto card.
+Eles valem para o PNG, o pôster, o foto card e o sticker.
 
 ## Pôster em várias folhas
 
@@ -57,26 +57,74 @@ imprimir em tamanho grande, seja um pôster ou um boneco de papelão em tamanho 
 
 Imprima em **tamanho real (100%)**, sem "ajustar à página".
 
-## Foto cards
+## Foto cards e bottons
 
-**Outras funções → Criar foto card** (ou **Colocar num foto card**, no editor) monta uma folha A4 com 9 photocards
-de 5,5 × 8,5 cm, com frente e verso, e gera um PDF de 2 páginas (`cards.js`).
+**Outras funções → Foto card e botton** (ou **Colocar num foto card**, no editor) abre a folha A4 (`cards.js`).
+No topo, **Folha de** escolhe entre **Foto cards** (9 por folha, 5,5 × 8,5 cm, frente e verso) e **Bottons**.
 
-- Toque num card para escolher a foto. Escolhendo várias de uma vez, elas vão para os próximos cards vazios.
+- Toque num card para escolher a foto. Escolhendo várias de uma vez, elas vão para os próximos vazios.
   Arrastar ou colar uma imagem com a janela aberta também funciona.
 - Arraste para posicionar; zoom pelo slider, pela roda do mouse ou com dois dedos; **Girar** gira 90°.
-  **Usar esta foto nos 9 cards** repete a foto (e o ajuste) em todos.
-- Verso: **Uma foto por card**, **Espelho da frente** (a foto da frente invertida, como se atravessasse o card)
-  ou **Igual em todos**. Na aba "Verso", a prévia mostra a folha virada: o card 1 fica à direita.
+  **Usar esta foto nos 9 cards** repete a foto (e o ajuste) em todos; moldura e stickers de cada um ficam.
+- Verso: **Uma foto por card**, **Espelho da frente** (a foto e a moldura da frente invertidas, como se
+  atravessassem o card) ou **Igual em todos**. Na aba "Verso", a prévia mostra a folha virada: o card 1 fica à direita.
 - A foto passa 2 mm da linha de corte (sangria), para um pequeno desvio da impressora não deixar borda branca.
   A linha tracejada da prévia é o corte, com cantos arredondados de 3 mm (use um cortador de cantos).
-- Marcas de conferência: uma grade 3×3 (quadrados de 2 mm) em dois cantos da frente e um ponto atrás de cada
-  uma no verso. Contra a luz, o ponto deve cair no quadrado do meio.
+- Marcas de conferência: uma grade 3×3 (quadrados de 2 mm) na frente e um ponto atrás de cada uma no verso.
+  Contra a luz, o ponto deve cair no quadrado do meio.
 
 **Alinhar frente e verso:** cada impressora desloca o verso um pouco. **Baixar folha de teste** gera réguas
 milimetradas na frente e cruzes vermelhas no verso. Contra a luz, leia onde as cruzes cortam as réguas e digite
 os valores em **Ajuste do verso** (fica salvo no aparelho). **Virar a folha pela** escolhe borda maior ou menor,
 conforme a impressora.
+
+### Tela cheia: stickers e moldura
+
+**Tela cheia: stickers e moldura** (abaixo da prévia), ou tocar de novo no card que já está selecionado, abre um
+card grande, pensado para o celular (no Android a barra do navegador some). As setas passam de um card para outro,
+**Ver verso** troca o lado e o botão de voltar do celular volta para a folha.
+
+- **Foto**: trocar, girar, centralizar e zoom. Arrastar a foto com um dedo; zoom com dois dedos.
+- **Stickers**: toque num sticker para colocar no card. Depois, arraste para mover; dois dedos (ou a bolinha
+  no canto) mudam o tamanho e giram. A barra de baixo tem **Excluir**, **Duplicar**, **Espelhar**,
+  **Para frente** e **Para trás**. **Repetir os stickers deste card em todos** copia os stickers para os outros.
+- **Meus stickers**: **Do celular** adiciona qualquer imagem (de preferência PNG sem fundo). No editor, depois de
+  tirar o fundo, **Virar sticker** manda a imagem recortada direto para lá. Eles ficam guardados no aparelho.
+- **Moldura**: 9 molduras desenhadas pelo app (Lisa, Fina, Dupla, Polaroid, Costura, Bolinhas, Corações, Estrelas,
+  Ondinhas), em qualquer cor, e as molduras da pasta. **Usar esta moldura em todos** repete nos outros.
+- **Desfazer** (seta no topo, ou Ctrl+Z) desfaz os últimos passos.
+
+**Stickers passando da borda:** em "Impressão frente e verso", marque **Stickers podem passar da borda do card**.
+Os cards ficam mais afastados (12 mm em vez de 8) e o sticker pode passar até 5 mm da borda. O que passa ganha uma
+borda branca, e uma linha cinza fina contorna o card e o sticker juntos: recorte por ela com tesoura. No verso,
+atrás do que passa da borda, fica branco. Com a opção ligada, as marcas de conferência vão para o meio da folha,
+entre os cards. Sem ela, a folha fica exatamente como antes.
+
+### Bottons
+
+- **Tamanho** traz os tamanhos comuns (2,5 / 3,2 / 3,8 / 4,4 / 5,8 / 7,6 cm). Cada um tem a **frente** (o que
+  aparece no botton) e o **corte** (o círculo maior, que dobra para trás na máquina).
+- **Ajuste fino**: digite a frente e o corte em mm para bater com a sua máquina.
+- A linha tracejada da prévia é a frente; entre ela e a linha de corte, a imagem dobra para trás. As molduras
+  ficam na borda da frente e a cor continua pela parte que dobra.
+- O app encaixa quantos couberem no A4, em fileiras alinhadas ou alternadas (ex.: 18 de 3,8 cm, 13 de 4,4 cm,
+  8 de 5,8 cm). O PDF tem uma página só, com a linha de corte cinza em volta de cada botton.
+
+### Pasta de enfeites
+
+Coloque stickers em `enfeites/stickers/` e molduras em `enfeites/molduras/` (PNG, WEBP, SVG ou JPG).
+
+- Sticker: de preferência PNG com fundo transparente.
+- Moldura PNG: centro transparente, na proporção do card com a sangria (59 × 89 mm, por exemplo 1180 × 1780 px).
+  Ela é esticada para cobrir o card até a sangria. No botton, ela cobre o círculo do corte.
+- O site lê a lista em `enfeites/lista.json`. O `iniciar.bat` (servidor local) atualiza a lista sozinho;
+  para atualizar à mão: `node enfeites/atualizar-lista.js`. Para aparecer no site publicado, envie a pasta e a
+  lista atualizada para o GitHub.
+
+### Projeto guardado
+
+Fotos, stickers, molduras e "Meus stickers" ficam guardados no aparelho (IndexedDB), mesmo fechando o app.
+**Começar do zero** apaga os cards e bottons (os "Meus stickers" continuam).
 
 ## Usar no celular
 
@@ -119,7 +167,9 @@ ajusta a suavidade do recorte sem rodar a IA de novo.
 | `edges.js` | Ajuste de suavidade da borda |
 | `retouch.js` | Retoque com lápis e lápis mágico |
 | `poster.js` | Pôster em várias folhas e geração do PDF |
-| `cards.js` | Foto cards (9 por folha, frente e verso) |
+| `cards.js` | Foto cards (9 por folha, frente e verso), bottons, tela cheia e projeto guardado |
+| `deco.js` | Molduras desenhadas e stickers dos foto cards e bottons |
+| `enfeites/` | Stickers e molduras da pasta (`lista.json`, `atualizar-lista.js`) |
 | `upscale.js`, `vendor/upscale/` | Ampliação (Lanczos e IA Real-ESRGAN, licença BSD-3) |
 | `sw.js`, `manifest.webmanifest` | App instalável e funcionamento offline |
 | `server.js`, `iniciar.bat` | Servidor local sem dependências |

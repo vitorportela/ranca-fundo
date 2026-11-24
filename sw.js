@@ -2,19 +2,34 @@
 // - Guarda o site e o modelo de IA no aparelho para funcionar sem internet.
 // - Acrescenta os cabeçalhos COOP/COEP (necessários para a IA usar vários núcleos),
 //   já que hospedagens como o GitHub Pages não permitem configurá-los.
-const VERSION = 'v11';
+const VERSION = 'v13';
 const SHELL_CACHE = 'shell-' + VERSION;
 const DATA_CACHE = 'data-v1'; // modelo e wasm (arquivos imutáveis, nomeados por hash)
 
 const SHELL = [
-  './', 'index.html', 'style.css', 'app.js', 'edges.js', 'poster.js', 'cards.js', 'retouch.js', 'upscale.js', 'manifest.webmanifest',
+  './', 'index.html', 'style.css', 'app.js', 'edges.js', 'poster.js', 'deco.js', 'cards.js', 'retouch.js', 'upscale.js', 'manifest.webmanifest',
   'img/mozao.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
   'vendor/background-removal.js', 'vendor/imgly-data/resources.json',
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(SHELL_CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(SHELL_CACHE).then(async (c) => {
+    await c.addAll(SHELL);
+    await cacheEnfeites(c);
+  }).then(() => self.skipWaiting()));
 });
+
+// Stickers e molduras da pasta enfeites/ (para funcionar sem internet). Falhar aqui não impede a instalação.
+async function cacheEnfeites(cache) {
+  try {
+    const resp = await fetch('enfeites/lista.json', { cache: 'no-cache' });
+    if (!resp.ok) return;
+    await cache.put('enfeites/lista.json', resp.clone());
+    const lista = await resp.json();
+    const files = [...(lista.stickers || []).map((n) => 'enfeites/stickers/' + n), ...(lista.molduras || []).map((n) => 'enfeites/molduras/' + n)];
+    await Promise.all(files.map((f) => cache.add(encodeURI(f)).catch(() => {})));
+  } catch { /* sem a lista, os enfeites ficam guardados quando forem usados */ }
+}
 
 self.addEventListener('activate', (e) => {
   e.waitUntil((async () => {

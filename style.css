@@ -535,3 +535,103 @@ body.modal-open { overflow: hidden; }
   #retouch .poster-form { gap: 14px; }
   #retouch .group h2 { margin-bottom: 6px; }
 }
+
+/* ---------- Foto cards: tela cheia, stickers e molduras ---------- */
+.hint-gap-top { margin-top: 10px; }
+.btn-sm svg { width: 16px; height: 16px; }
+.preview-actions { display: flex; justify-content: center; margin-top: 10px; }
+body.full-open { overflow: hidden; }
+.cfull {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; flex-direction: column;
+  height: 100vh; height: 100dvh;
+  background: var(--bg); color: var(--text);
+  overscroll-behavior: none;
+}
+.cf-top {
+  display: flex; align-items: center; gap: 4px;
+  padding: 6px 8px; padding-top: max(6px, env(safe-area-inset-top));
+  background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.cf-nav { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 2px; }
+.cf-nav span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; font-size: .95rem; }
+.cf-ic {
+  flex: none; width: 44px; height: 44px; display: grid; place-items: center;
+  border: 0; border-radius: 12px; background: transparent; color: var(--text); cursor: pointer;
+}
+.cf-ic:disabled { opacity: .3; cursor: default; }
+.cf-ic svg, .cf-tool svg, .cf-sb svg, .cf-add svg {
+  width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.cf-chip {
+  flex: none; padding: 8px 12px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface-2);
+  font-size: .85rem; font-weight: 600;
+}
+.cf-stage { position: relative; flex: 1; min-height: 0; }
+.cf-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.cf-hint {
+  position: absolute; left: 0; right: 0; bottom: 4px; margin: 0; padding: 0 12px;
+  text-align: center; font-size: .78rem; color: var(--muted); pointer-events: none;
+}
+.cf-selbar {
+  display: flex; justify-content: center; gap: 2px; padding: 4px 6px;
+  background: var(--surface); border-top: 1px solid var(--border); overflow-x: auto;
+}
+.cf-sb {
+  flex: none; min-width: 62px; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 6px 4px; border: 0; border-radius: 10px; background: transparent; color: var(--text);
+  font-size: .72rem; font-weight: 600; cursor: pointer;
+}
+.cf-sb.danger { color: var(--danger); }
+.cf-panel {
+  max-height: 44vh; max-height: 44dvh; overflow-y: auto; overscroll-behavior: contain;
+  padding: 12px 14px; background: var(--surface); border-top: 1px solid var(--border);
+}
+.cf-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.cf-row .btn-sm { flex: 1 1 auto; }
+.cf-tools {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.cf-tool {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 10px 4px 12px; border: 0; background: transparent; cursor: pointer;
+  color: var(--muted); font-size: .8rem; font-weight: 600;
+}
+.cf-tool[aria-pressed="true"] { color: var(--accent); }
+.cf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+.cf-tile {
+  position: relative; aspect-ratio: 1; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  padding: 6px; border-radius: 12px; border: 2px solid transparent; cursor: pointer;
+  background: var(--surface-2); color: var(--muted); font-size: .72rem; font-weight: 600; text-align: center;
+}
+.cf-tile img, .cf-tile canvas { display: block; max-width: 100%; max-height: 100%; min-height: 0; object-fit: contain; flex: 1 1 auto; }
+.cf-tile[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.cf-cap { flex: none; line-height: 1.1; }
+.cf-add { color: var(--accent); border: 2px dashed var(--border); background: transparent; }
+.cf-tile .x {
+  position: absolute; top: -6px; right: -6px; width: 24px; height: 24px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--text); color: var(--surface);
+  font-size: 1rem; line-height: 1;
+}
+.cf-sec-title {
+  margin: 4px 0 8px; font-size: .78rem; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.cf-grid + .cf-sec-title { margin-top: 16px; }
+.cf-grid + .small { margin: 8px 0 0; }
+.cf-colors { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.cf-swatch {
+  width: 36px; height: 36px; padding: 0; border-radius: 50%; cursor: pointer;
+  border: 2px solid var(--border);
+}
+.cf-swatch[aria-pressed="true"] { outline: 3px solid var(--accent); outline-offset: 2px; }
+.cf-custom { position: relative; overflow: hidden; background: conic-gradient(#f44, #fd3, #5d5, #3cf, #55f, #e4e, #f44); }
+.cf-custom input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+@media (min-width: 900px) {
+  .cf-panel, .cf-selbar, .cf-tools { padding-left: max(14px, calc(50% - 360px)); padding-right: max(14px, calc(50% - 360px)); }
+}

@@ -25,6 +25,7 @@
   el.posterInput = $('posterInput');
   el.cardHomeBtn = $('cardHomeBtn');
   el.cardBtn = $('cardBtn');
+  el.stickerBtn = $('stickerBtn');
   el.edge = $('edge');
   el.edgeOut = $('edgeOut');
   el.retouchBtn = $('retouchBtn');
@@ -404,6 +405,7 @@
     el.retouchBtn.disabled = item.status !== 'done';
     el.retouchInfo.textContent = item.edits ? 'Esta imagem tem retoques.' : '';
     el.downloadBtn.disabled = item.status !== 'done';
+    el.stickerBtn.disabled = item.status !== 'done';
     el.shareBtn.disabled = item.status !== 'done';
     el.posterBtn.disabled = false; // dá para fazer pôster da foto original antes de tirar o fundo
     el.cardBtn.disabled = false;
@@ -618,6 +620,14 @@
     const name = done ? item.name.replace(/\.[^.]+$/, '') + '-sem-fundo.png' : item.name;
     window.RancaCards.open();
     window.RancaCards.addFiles([new File([blob], name, { type: blob.type || 'image/png' })]);
+  });
+
+  // A imagem sem fundo (sempre transparente) vira sticker dos foto cards e bottons.
+  el.stickerBtn.addEventListener('click', () => {
+    const item = state.current;
+    if (!item || item.status !== 'done') return;
+    const name = item.name.replace(/\.[^.]+$/, '') + '-sticker.png';
+    window.RancaCards.addSticker(new File([item.resultBlob], name, { type: 'image/png' }));
   });
 
   el.newBtn.addEventListener('click', () => el.fileInput.click());

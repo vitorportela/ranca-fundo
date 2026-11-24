@@ -5,6 +5,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
+const atualizarEnfeites = require('./enfeites/atualizar-lista');
 
 const ROOT = __dirname;
 const START_PORT = Number(process.env.PORT) || 8080;
@@ -17,6 +18,10 @@ const TYPES = {
   '.wasm': 'application/wasm',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
   '.ico': 'image/x-icon',
   '.md': 'text/markdown; charset=utf-8',
 };
@@ -31,6 +36,8 @@ const server = http.createServer((req, res) => {
   try { urlPath = decodeURIComponent(new URL(req.url, 'http://x').pathname); }
   catch { res.writeHead(400).end(); return; }
   if (urlPath.endsWith('/')) urlPath += 'index.html';
+  // a lista de enfeites acompanha o que estiver nas pastas
+  if (urlPath === '/enfeites/lista.json') { try { atualizarEnfeites(); } catch (e) { console.error(e); } }
 
   const file = path.join(ROOT, urlPath);
   if (!file.startsWith(ROOT + path.sep)) { res.writeHead(403).end(); return; }
@@ -50,6 +57,8 @@ const server = http.createServer((req, res) => {
     fs.createReadStream(file).pipe(res);
   });
 });
+
+try { atualizarEnfeites(); } catch (e) { console.error(e); }
 
 function listen(port) {
   server.once('error', (e) => {

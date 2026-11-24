@@ -83,7 +83,7 @@
               <span class="tool-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="2"/><circle cx="12" cy="10" r="2.6"/><path d="M8.5 17c.6-2 2-3 3.5-3s2.9 1 3.5 3"/></svg>
               </span>
-              <span class="tool-text"><strong>Criar foto card</strong><small>9 por folha, frente e verso</small></span>
+              <span class="tool-text"><strong>Foto card e botton</strong><small>Com stickers e moldura</small></span>
             </button>
           </div>
           <input type="file" id="posterInput" accept="image/*" hidden>
@@ -182,6 +182,10 @@
           <button class="btn btn-soft" id="cardBtn" type="button" disabled>
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2"/><circle cx="12" cy="10" r="2.6"/><path d="M8.5 17c.6-2 2-3 3.5-3s2.9 1 3.5 3"/></svg>
             Colocar num foto card
+          </button>
+          <button class="btn btn-soft" id="stickerBtn" type="button" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 11-8-8h8v8z"/><path d="M12 4a8 8 0 008 8h-6a2 2 0 01-2-2z"/></svg>
+            Virar sticker
           </button>
           <p class="small center" id="sizeInfo"></p>
           <button class="btn btn-ghost" id="newBtn" type="button">Nova imagem</button>
@@ -303,7 +307,7 @@
     </div>
   </div>
 
-  <!-- Foto cards -->
+  <!-- Foto cards e bottons -->
   <div class="modal" id="cards" role="dialog" aria-modal="true" aria-labelledby="cardsTitle" hidden>
     <div class="modal-card">
       <div class="modal-head">
@@ -313,13 +317,20 @@
       <div class="poster-body">
         <div class="poster-form">
           <div class="group">
+            <h2>Folha de</h2>
+            <div class="seg" role="radiogroup" aria-label="Tipo de folha">
+              <label><input type="radio" name="cMode" id="cModeCards" value="cards" checked><span>Foto cards</span></label>
+              <label><input type="radio" name="cMode" id="cModeBtn" value="buttons"><span>Bottons</span></label>
+            </div>
+          </div>
+          <div class="group" id="cSideBox">
             <h2>Editando</h2>
             <div class="seg" role="radiogroup" aria-label="Lado da folha">
               <label><input type="radio" name="cSide" id="cSideFront" value="front" checked><span>Frente</span></label>
               <label><input type="radio" name="cSide" id="cSideBack" value="back"><span>Verso</span></label>
             </div>
           </div>
-          <div class="group">
+          <div class="group" id="cBackBox">
             <h2>Verso dos cards</h2>
             <div class="seg seg3" role="radiogroup" aria-label="Tipo de verso">
               <label><input type="radio" name="cBack" id="cBackEach" value="each" checked><span>Uma foto por card</span></label>
@@ -327,6 +338,20 @@
               <label><input type="radio" name="cBack" id="cBackSame" value="same"><span>Igual em todos</span></label>
             </div>
             <p class="small hint-gap" id="cBackHint"></p>
+          </div>
+          <div class="group" id="cBtnBox" hidden>
+            <h2>Tamanho do botton</h2>
+            <label class="field">Tamanho
+              <select id="cBtnPreset"></select>
+            </label>
+            <p class="small">Ajuste fino (para a sua máquina de botton):</p>
+            <div class="check">
+              <input type="text" class="num" id="cBtnFace" inputmode="decimal" aria-label="Frente do botton em mm"> mm de frente
+            </div>
+            <div class="check">
+              <input type="text" class="num" id="cBtnCut" inputmode="decimal" aria-label="Diâmetro do corte em mm"> mm de corte
+            </div>
+            <p class="small hint-gap" id="cBtnInfo"></p>
           </div>
           <div class="group">
             <h2 id="cSelTitle">Card 1</h2>
@@ -347,11 +372,13 @@
               <button class="btn btn-soft btn-sm wide" id="cAll" type="button">Usar esta foto nos 9 cards</button>
               <p class="small hint-gap" id="cQuality"></p>
             </div>
-            <p class="small" id="cSelHint"></p>
+            <p class="small hint-gap" id="cSelHint"></p>
           </div>
-          <div class="group">
+          <div class="group" id="cPrintBox">
             <h2>Impressão frente e verso</h2>
-            <label class="field">Virar a folha pela
+            <label class="check"><input type="checkbox" id="cOver"> Stickers podem passar da borda do card</label>
+            <p class="small hint-gap" id="cOverHint"></p>
+            <label class="field hint-gap-top">Virar a folha pela
               <select id="cFlip">
                 <option value="long">borda maior (o mais comum)</option>
                 <option value="short">borda menor</option>
@@ -366,11 +393,22 @@
             </div>
             <p class="small hint-gap">Use número negativo para esquerda ou para cima.</p>
             <button class="btn btn-soft btn-sm wide" id="cTest" type="button">Baixar folha de teste</button>
-            <label class="check"><input type="checkbox" id="cMarks" checked> Marcas de conferência nos cantos</label>
+            <label class="check"><input type="checkbox" id="cMarks" checked> Marcas de conferência</label>
+          </div>
+          <div class="group">
+            <h2>Projeto</h2>
+            <p class="small">Fotos, stickers e molduras ficam guardados neste aparelho, mesmo fechando o app.</p>
+            <button class="btn btn-soft btn-sm wide hint-gap-top" id="cReset" type="button">Começar do zero</button>
           </div>
         </div>
         <div class="poster-preview">
-          <canvas id="cCanvas" class="poster-canvas card-canvas" aria-label="Prévia da folha de foto cards"></canvas>
+          <canvas id="cCanvas" class="poster-canvas card-canvas" aria-label="Prévia da folha"></canvas>
+          <div class="preview-actions">
+            <button class="btn btn-primary btn-sm" id="cFullOpen" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+              Tela cheia: stickers e moldura
+            </button>
+          </div>
           <p class="small center hint-gap" id="cHint"></p>
         </div>
       </div>
@@ -384,6 +422,61 @@
       </div>
     </div>
     <input type="file" id="cInput" accept="image/*" multiple hidden>
+  </div>
+
+  <!-- Foto cards: um card grande, em tela cheia -->
+  <div class="cfull" id="cFull" role="dialog" aria-modal="true" aria-labelledby="cfTitle" hidden>
+    <div class="cf-top">
+      <button class="cf-ic" id="cfClose" type="button" aria-label="Voltar para a folha"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="cf-nav">
+        <button class="cf-ic" id="cfPrev" type="button" aria-label="Anterior"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 6l-6 6 6 6"/></svg></button>
+        <span id="cfTitle">Card 1</span>
+        <button class="cf-ic" id="cfNext" type="button" aria-label="Próximo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6l6 6-6 6"/></svg></button>
+      </div>
+      <button class="cf-ic" id="cfUndo" type="button" aria-label="Desfazer" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg></button>
+      <button class="cf-chip" id="cfSide" type="button">Ver verso</button>
+    </div>
+    <div class="cf-stage">
+      <canvas id="cfCanvas" aria-label="Card em tela cheia"></canvas>
+      <p class="cf-hint" id="cfHint"></p>
+    </div>
+    <div class="cf-selbar" id="cfSelBar" hidden>
+      <button class="cf-sb danger" id="cfDel" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>Excluir</button>
+      <button class="cf-sb" id="cfDup" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"/></svg>Duplicar</button>
+      <button class="cf-sb" id="cfMir" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M9 7L4 17h5zM15 7l5 10h-5z"/></svg>Espelhar</button>
+      <button class="cf-sb" id="cfUp" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V6M6 11l6-6 6 6"/></svg>Para frente</button>
+      <button class="cf-sb" id="cfDown" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v13M6 13l6 6 6-6"/></svg>Para trás</button>
+    </div>
+    <div class="cf-panel" id="cfPanel" hidden>
+      <div id="cfPhoto" hidden>
+        <div class="cf-row">
+          <button class="btn btn-soft btn-sm" id="cfPick" type="button">Escolher foto</button>
+          <button class="btn btn-soft btn-sm" id="cfRotate" type="button">Girar</button>
+          <button class="btn btn-soft btn-sm" id="cfCenter" type="button">Centralizar</button>
+          <button class="btn btn-soft btn-sm" id="cfRemove" type="button">Tirar foto</button>
+        </div>
+        <label class="field">
+          <span class="field-top">Zoom <output id="cfZoomOut">100%</output></span>
+          <input type="range" id="cfZoom" min="20" max="400" step="1" value="100">
+        </label>
+        <p class="small" id="cfPhotoHint"></p>
+      </div>
+      <div id="cfStickers" hidden>
+        <div id="cfStGrid"></div>
+        <button class="btn btn-soft btn-sm wide hint-gap-top" id="cfStAll" type="button">Repetir os stickers deste card em todos</button>
+      </div>
+      <div id="cfFrames" hidden>
+        <div id="cfFrGrid"></div>
+        <div class="cf-colors" id="cfColors"></div>
+        <button class="btn btn-soft btn-sm wide" id="cfFrAll" type="button">Usar esta moldura em todos</button>
+      </div>
+    </div>
+    <div class="cf-tools">
+      <button class="cf-tool" type="button" data-panel="photo" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>Foto</button>
+      <button class="cf-tool" type="button" data-panel="stickers" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 11-8-8h8v8z"/><path d="M12 4a8 8 0 008 8h-6a2 2 0 01-2-2z"/></svg>Stickers</button>
+      <button class="cf-tool" type="button" data-panel="frames" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>Moldura</button>
+    </div>
+    <input type="file" id="cfStInput" accept="image/*" multiple hidden>
   </div>
 
   <!-- Retoque com lápis -->
@@ -447,6 +540,7 @@
 
   <script src="edges.js"></script>
   <script src="retouch.js"></script>
+  <script src="deco.js"></script>
   <script src="upscale.js"></script>
   <script src="poster.js"></script>
   <script src="cards.js"></script>
