@@ -24,6 +24,7 @@
   el.posterHomeBtn = $('posterHomeBtn');
   el.posterInput = $('posterInput');
   el.cardHomeBtn = $('cardHomeBtn');
+  el.cardBtn = $('cardBtn');
   el.edge = $('edge');
   el.edgeOut = $('edgeOut');
 
@@ -104,16 +105,18 @@
   window.addEventListener('drop', (e) => {
     e.preventDefault(); dragDepth = 0; document.body.classList.remove('dragging');
     if (!e.dataTransfer?.files?.length) return;
-    if (posterTakesFiles(e.dataTransfer.files)) return;
+    if (modalTakesFiles(e.dataTransfer.files)) return;
     addFiles(e.dataTransfer.files);
   });
   window.addEventListener('paste', (e) => {
     const files = [...(e.clipboardData?.files || [])];
-    if (!files.length || posterTakesFiles(files)) return;
+    if (!files.length || modalTakesFiles(files)) return;
     addFiles(files);
   });
 
-  function posterTakesFiles(files) {
+  // Com o pôster ou os foto cards abertos, a imagem arrastada/colada vai para a janela.
+  function modalTakesFiles(files) {
+    if (window.RancaCards.isOpen()) { window.RancaCards.addFiles(files); return true; }
     if (!window.RancaPoster.isOpen()) return false;
     const img = [...files].find((f) => f.type.startsWith('image/'));
     if (img) loadPosterFile(img);
@@ -365,6 +368,7 @@
     el.downloadBtn.disabled = item.status !== 'done';
     el.shareBtn.disabled = item.status !== 'done';
     el.posterBtn.disabled = false; // dá para fazer pôster da foto original antes de tirar o fundo
+    el.cardBtn.disabled = false;
     window.RancaPoster.refresh();
     el.sizeInfo.textContent = item.w ? item.w + ' × ' + item.h + ' px' : '';
   }
@@ -535,7 +539,18 @@
     openPoster(item);
   }
 
-  el.cardHomeBtn.addEventListener('click', () => notify('O Foto Card está chegando em breve!'));
+  /* ---------------- Foto cards ---------------- */
+  el.cardHomeBtn.addEventListener('click', () => window.RancaCards.open());
+  // Leva a imagem do editor: sem fundo (com a cor escolhida) ou a original, se a IA ainda não terminou.
+  el.cardBtn.addEventListener('click', async () => {
+    const item = state.current;
+    if (!item) return;
+    const done = item.status === 'done';
+    const blob = done ? await exportBlob(item) : item.input || item.file;
+    const name = done ? item.name.replace(/\.[^.]+$/, '') + '-sem-fundo.png' : item.name;
+    window.RancaCards.open();
+    window.RancaCards.addFiles([new File([blob], name, { type: blob.type || 'image/png' })]);
+  });
 
   el.newBtn.addEventListener('click', () => el.fileInput.click());
 

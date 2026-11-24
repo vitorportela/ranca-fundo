@@ -2,12 +2,12 @@
 // - Guarda o site e o modelo de IA no aparelho para funcionar sem internet.
 // - Acrescenta os cabeçalhos COOP/COEP (necessários para a IA usar vários núcleos),
 //   já que hospedagens como o GitHub Pages não permitem configurá-los.
-const VERSION = 'v7';
+const VERSION = 'v8';
 const SHELL_CACHE = 'shell-' + VERSION;
 const DATA_CACHE = 'data-v1'; // modelo e wasm (arquivos imutáveis, nomeados por hash)
 
 const SHELL = [
-  './', 'index.html', 'style.css', 'app.js', 'edges.js', 'poster.js', 'upscale.js', 'manifest.webmanifest',
+  './', 'index.html', 'style.css', 'app.js', 'edges.js', 'poster.js', 'cards.js', 'upscale.js', 'manifest.webmanifest',
   'img/mozao.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
   'vendor/background-removal.js', 'vendor/imgly-data/resources.json',
 ];

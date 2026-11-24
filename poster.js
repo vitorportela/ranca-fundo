@@ -633,4 +633,6 @@
 
   loadPrefs();
   window.RancaPoster = { open, refresh: syncSourceUI, isOpen: () => !el.modal.hidden };
+  // usado também pelos foto cards (cards.js)
+  window.RancaPdf = { PdfWriter, latin1, pdfText, f, PT, toBlob, download };
 })();

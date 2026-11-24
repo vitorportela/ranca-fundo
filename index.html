@@ -83,7 +83,7 @@
               <span class="tool-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="2"/><circle cx="12" cy="10" r="2.6"/><path d="M8.5 17c.6-2 2-3 3.5-3s2.9 1 3.5 3"/></svg>
               </span>
-              <span class="tool-text"><strong>Criar foto card</strong><small>Em breve</small></span>
+              <span class="tool-text"><strong>Criar foto card</strong><small>9 por folha, frente e verso</small></span>
             </button>
           </div>
           <input type="file" id="posterInput" accept="image/*" hidden>
@@ -169,6 +169,10 @@
           <button class="btn btn-soft" id="posterBtn" type="button" disabled>
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18M3 12h18"/></svg>
             Imprimir como pôster
+          </button>
+          <button class="btn btn-soft" id="cardBtn" type="button" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2"/><circle cx="12" cy="10" r="2.6"/><path d="M8.5 17c.6-2 2-3 3.5-3s2.9 1 3.5 3"/></svg>
+            Colocar num foto card
           </button>
           <p class="small center" id="sizeInfo"></p>
           <button class="btn btn-ghost" id="newBtn" type="button">Nova imagem</button>
@@ -283,9 +287,93 @@
     </div>
   </div>
 
+  <!-- Foto cards -->
+  <div class="modal" id="cards" role="dialog" aria-modal="true" aria-labelledby="cardsTitle" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2 id="cardsTitle">Foto cards (9 por folha A4)</h2>
+        <button class="icon-btn" id="cClose" type="button" aria-label="Fechar">×</button>
+      </div>
+      <div class="poster-body">
+        <div class="poster-form">
+          <div class="group">
+            <h2>Editando</h2>
+            <div class="seg" role="radiogroup" aria-label="Lado da folha">
+              <label><input type="radio" name="cSide" id="cSideFront" value="front" checked><span>Frente</span></label>
+              <label><input type="radio" name="cSide" id="cSideBack" value="back"><span>Verso</span></label>
+            </div>
+          </div>
+          <div class="group">
+            <h2>Verso dos cards</h2>
+            <div class="seg seg3" role="radiogroup" aria-label="Tipo de verso">
+              <label><input type="radio" name="cBack" id="cBackEach" value="each" checked><span>Uma foto por card</span></label>
+              <label><input type="radio" name="cBack" id="cBackMirror" value="mirror"><span>Espelho da frente</span></label>
+              <label><input type="radio" name="cBack" id="cBackSame" value="same"><span>Igual em todos</span></label>
+            </div>
+            <p class="small hint-gap" id="cBackHint"></p>
+          </div>
+          <div class="group">
+            <h2 id="cSelTitle">Card 1</h2>
+            <div class="img-row">
+              <span class="img-name" id="cImgName"></span>
+              <button class="btn btn-soft btn-sm" id="cPick" type="button">Escolher foto</button>
+            </div>
+            <div id="cEditBox" hidden>
+              <label class="field">
+                <span class="field-top">Zoom <output id="cZoomOut">100%</output></span>
+                <input type="range" id="cZoom" min="20" max="400" step="1" value="100">
+              </label>
+              <div class="btn-row">
+                <button class="btn btn-soft btn-sm" id="cRotate" type="button">Girar</button>
+                <button class="btn btn-soft btn-sm" id="cCenter" type="button">Centralizar</button>
+                <button class="btn btn-soft btn-sm" id="cRemove" type="button">Tirar foto</button>
+              </div>
+              <button class="btn btn-soft btn-sm wide" id="cAll" type="button">Usar esta foto nos 9 cards</button>
+              <p class="small hint-gap" id="cQuality"></p>
+            </div>
+            <p class="small" id="cSelHint"></p>
+          </div>
+          <div class="group">
+            <h2>Impressão frente e verso</h2>
+            <label class="field">Virar a folha pela
+              <select id="cFlip">
+                <option value="long">borda maior (o mais comum)</option>
+                <option value="short">borda menor</option>
+              </select>
+            </label>
+            <p class="small">Ajuste do verso (da folha de teste):</p>
+            <div class="check">
+              <input type="text" class="num" id="cDx" inputmode="decimal" value="0" aria-label="Ajuste horizontal em mm"> mm para a direita
+            </div>
+            <div class="check">
+              <input type="text" class="num" id="cDy" inputmode="decimal" value="0" aria-label="Ajuste vertical em mm"> mm para baixo
+            </div>
+            <p class="small hint-gap">Use número negativo para esquerda ou para cima.</p>
+            <button class="btn btn-soft btn-sm wide" id="cTest" type="button">Baixar folha de teste</button>
+            <label class="check"><input type="checkbox" id="cMarks" checked> Marcas de conferência nos cantos</label>
+          </div>
+        </div>
+        <div class="poster-preview">
+          <canvas id="cCanvas" class="poster-canvas card-canvas" aria-label="Prévia da folha de foto cards"></canvas>
+          <p class="small center hint-gap" id="cHint"></p>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <p class="small" id="cStatus" aria-live="polite"></p>
+        <button class="btn btn-soft" id="cShare" type="button" hidden>Compartilhar</button>
+        <button class="btn btn-primary" id="cMake" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+          Baixar PDF
+        </button>
+      </div>
+    </div>
+    <input type="file" id="cInput" accept="image/*" multiple hidden>
+  </div>
+
   <script src="edges.js"></script>
   <script src="upscale.js"></script>
   <script src="poster.js"></script>
+  <script src="cards.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -500,6 +500,16 @@ body.modal-open { overflow: hidden; }
 .poster-info .small { grid-column: 1 / -1; margin-top: 6px; }
 .poster-warn { grid-column: 1 / -1; color: var(--danger); font-weight: 600; margin: 0; }
 
+/* ---------- Foto cards ---------- */
+.seg3 { grid-template-columns: repeat(3, 1fr); }
+.hint-gap:not(:empty) { margin-top: 8px; }
+.field-top { display: flex; justify-content: space-between; }
+.btn-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
+.btn-row .btn-sm { padding: 7px 6px; }
+.btn-sm.wide { width: 100%; }
+.card-canvas { height: min(72vh, 680px); touch-action: none; cursor: grab; }
+.card-canvas:active { cursor: grabbing; }
+
 /* ---------- Responsivo ---------- */
 @media (max-width: 900px) {
   .hero { grid-template-columns: 1fr; min-height: 0; padding-top: 16px; }
@@ -507,6 +517,7 @@ body.modal-open { overflow: hidden; }
   .poster-body { grid-template-columns: 1fr; }
   .poster-preview { order: -1; }
   .poster-canvas, .poster-empty { height: 42vh; }
+  .card-canvas { height: 58vh; }
   .modal { padding: 0; }
   .modal-card { max-height: 100vh; height: 100%; border-radius: 0; }
 }

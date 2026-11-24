@@ -38,6 +38,27 @@ imprimir em tamanho grande, seja um pôster ou um boneco de papelão em tamanho 
 
 Imprima em **tamanho real (100%)**, sem "ajustar à página".
 
+## Foto cards
+
+**Outras funções → Criar foto card** (ou **Colocar num foto card**, no editor) monta uma folha A4 com 9 photocards
+de 5,5 × 8,5 cm, com frente e verso, e gera um PDF de 2 páginas (`cards.js`).
+
+- Toque num card para escolher a foto. Escolhendo várias de uma vez, elas vão para os próximos cards vazios.
+  Arrastar ou colar uma imagem com a janela aberta também funciona.
+- Arraste para posicionar; zoom pelo slider, pela roda do mouse ou com dois dedos; **Girar** gira 90°.
+  **Usar esta foto nos 9 cards** repete a foto (e o ajuste) em todos.
+- Verso: **Uma foto por card**, **Espelho da frente** (a foto da frente invertida, como se atravessasse o card)
+  ou **Igual em todos**. Na aba "Verso", a prévia mostra a folha virada: o card 1 fica à direita.
+- A foto passa 2 mm da linha de corte (sangria), para um pequeno desvio da impressora não deixar borda branca.
+  A linha tracejada da prévia é o corte, com cantos arredondados de 3 mm (use um cortador de cantos).
+- Marcas de conferência: uma grade 3×3 (quadrados de 2 mm) em dois cantos da frente e um ponto atrás de cada
+  uma no verso. Contra a luz, o ponto deve cair no quadrado do meio.
+
+**Alinhar frente e verso:** cada impressora desloca o verso um pouco. **Baixar folha de teste** gera réguas
+milimetradas na frente e cruzes vermelhas no verso. Contra a luz, leia onde as cruzes cortam as réguas e digite
+os valores em **Ajuste do verso** (fica salvo no aparelho). **Virar a folha pela** escolhe borda maior ou menor,
+conforme a impressora.
+
 ## Usar no celular
 
 O site é um app instalável (PWA). Ele precisa estar hospedado em HTTPS. Depois do primeiro uso, funciona sem internet.
@@ -78,6 +99,7 @@ ajusta a suavidade do recorte sem rodar a IA de novo.
 | `index.html`, `style.css`, `app.js` | Interface |
 | `edges.js` | Ajuste de suavidade da borda |
 | `poster.js` | Pôster em várias folhas e geração do PDF |
+| `cards.js` | Foto cards (9 por folha, frente e verso) |
 | `upscale.js`, `vendor/upscale/` | Ampliação (Lanczos e IA Real-ESRGAN, licença BSD-3) |
 | `sw.js`, `manifest.webmanifest` | App instalável e funcionamento offline |
 | `server.js`, `iniciar.bat` | Servidor local sem dependências |
