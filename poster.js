@@ -22,7 +22,7 @@
     overlapOn: $('pOverlapOn'), overlap: $('pOverlap'),
     count: $('pCount'), axis: $('pAxis'),
     skip: $('pSkip'), skipRow: $('pSkipRow'), guide: $('pGuide'),
-    ai: $('pAi'), aiRow: $('pAiRow'),
+    ai: $('pAi'), aiRow: $('pAiRow'), aiLevel: $('pAiLevel'), aiLevelRow: $('pAiLevelRow'),
     canvas: $('pCanvas'), info: $('pInfo'), status: $('pStatus'),
     make: $('pMake'), share: $('pShare'), cancel: $('pCancel'),
     srcResult: $('pSrcResult'), srcOrig: $('pSrcOrig'), srcHint: $('pSrcHint'), srcAction: $('pSrcAction'),
@@ -58,7 +58,7 @@
   const pdfText = (s) => '(' + s.replace(/[\\()]/g, '\\$&') + ')';
 
   /* ---------------- Preferências ---------------- */
-  const FIELDS = ['paper', 'orient', 'marginOn', 'margin', 'overlapOn', 'overlap', 'count', 'axis', 'skip', 'guide', 'ai'];
+  const FIELDS = ['paper', 'orient', 'marginOn', 'margin', 'overlapOn', 'overlap', 'count', 'axis', 'skip', 'guide', 'ai', 'aiLevel'];
   function loadPrefs() {
     try {
       const p = JSON.parse(localStorage.getItem('rancaFundoPoster') || '{}');
@@ -235,6 +235,7 @@
     el.skipRow.hidden = !!src.bg || src.opaque;
     layout = compute();
     el.aiRow.hidden = !layout.lowRes;
+    el.aiLevelRow.hidden = !el.ai.checked;
     pdfFile = null;
     el.share.hidden = true;
     if (!busy) el.status.textContent = '';
@@ -377,6 +378,7 @@
     if (L.useAi) {
       await window.RancaUpscale.ai(crop, g, dx, dy, q, {
         onProgress: onAiProgress, onStatus, cancelled: () => cancelled,
+        strength: Math.min(1, Math.max(0, +el.aiLevel.value || 0.6)),
       });
     } else {
       const big = window.RancaUpscale.lanczos(crop, Math.max(1, Math.round(crop.width * q)), Math.max(1, Math.round(crop.height * q)));

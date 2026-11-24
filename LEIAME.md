@@ -48,6 +48,9 @@ imprimir em tamanho grande, seja um pôster ou um boneco de papelão em tamanho 
   o modelo Real-ESRGAN (`realesr-general-x4v3`, ~5 MB, `upscale.js`) recria os detalhes ao ampliar 4×.
   É mais lento (no computador, segundos por folha; no celular, mais) e pode ser cancelado.
   Depois do primeiro uso, funciona offline.
+  Em **Fidelidade à foto**, dá para escolher quanto da IA entra: "Fiel à foto" (30% IA, 70% ampliação comum)
+  mantém os rostos como na foto; "Equilibrado" (60%) é o padrão; "Máximo de nitidez" usa só a IA, que pode
+  inventar traços em rostos pequenos.
 
 Imprima em **tamanho real (100%)**, sem "ajustar à página".
 

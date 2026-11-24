@@ -111,6 +111,7 @@
     const { session, ort, gpu } = await getSession(opts.onStatus);
     const T = gpu ? 256 : 160;
     const W = src.width, H = src.height;
+    const strength = opts.strength == null ? 1 : opts.strength; // 1 = só IA
     const sd = src.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, W, H).data;
     const tile = document.createElement('canvas');
     const tctx = tile.getContext('2d');
@@ -141,11 +142,23 @@
         const img = new ImageData(cw, ch);
         const d = img.data;
         const ox = (cx0 - x0) * SCALE, oy = (cy0 - y0) * SCALE;
+        // Fidelidade: mistura a IA com a ampliação comum (Lanczos) do mesmo bloco.
+        // Menos IA = menos detalhe inventado (rostos ficam como na foto).
+        const k = strength, kl = 1 - k;
+        let ld = null;
+        if (kl > 0) {
+          const part = document.createElement('canvas');
+          part.width = w; part.height = h;
+          part.getContext('2d').drawImage(src, x0, y0, w, h, 0, 0, w, h);
+          ld = lanczos(part, OW, h * SCALE).getContext('2d').getImageData(ox, oy, cw, ch).data;
+        }
         for (let y = 0; y < ch; y++) {
           const row = (oy + y) * OW + ox;
           for (let x = 0; x < cw; x++) {
             const i = row + x, p = (y * cw + x) * 4;
-            d[p] = o[i] * 255; d[p + 1] = o[ON + i] * 255; d[p + 2] = o[2 * ON + i] * 255; d[p + 3] = 255;
+            let r = o[i] * 255, g = o[ON + i] * 255, b = o[2 * ON + i] * 255;
+            if (ld) { r = r * k + ld[p] * kl; g = g * k + ld[p + 1] * kl; b = b * k + ld[p + 2] * kl; }
+            d[p] = r; d[p + 1] = g; d[p + 2] = b; d[p + 3] = 255;
           }
         }
         tile.width = cw; tile.height = ch;

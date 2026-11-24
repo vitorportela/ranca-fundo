@@ -270,6 +270,13 @@
             <div id="pAiRow" hidden>
               <label class="check"><input type="checkbox" id="pAi"> Melhorar nitidez com IA</label>
               <p class="small indent">A foto é pequena para esse tamanho. A IA recria os detalhes ao ampliar, mas o PDF demora bem mais para sair (no celular, pode levar alguns minutos).</p>
+              <label class="field indent ai-level" id="pAiLevelRow">Fidelidade à foto
+                <select id="pAiLevel">
+                  <option value="0.3">Fiel à foto (rostos como na foto, um pouco mais macio)</option>
+                  <option value="0.6" selected>Equilibrado</option>
+                  <option value="1">Máximo de nitidez (a IA pode mudar rostos)</option>
+                </select>
+              </label>
             </div>
           </div>
         </div>
