@@ -20,6 +20,10 @@
   // limite de pixels para não estourar a memória do aparelho
   const MAX_PIXELS = IS_MOBILE ? 12e6 : 36e6;
   el.shareBtn = $('shareBtn');
+  el.posterBtn = $('posterBtn');
+  el.posterHomeBtn = $('posterHomeBtn');
+  el.posterInput = $('posterInput');
+  el.cardHomeBtn = $('cardHomeBtn');
   el.edge = $('edge');
   el.edgeOut = $('edgeOut');
 
@@ -60,17 +64,21 @@
   }
 
   /* ---------------- Entrada de arquivos ---------------- */
+  function makeItem(file) {
+    return {
+      id: nextId++, file,
+      name: file.name || 'imagem-colada.png',
+      origUrl: URL.createObjectURL(file),
+      w: 0, h: 0, resultBlob: null, resultUrl: '', status: 'pending',
+    };
+  }
+
   function addFiles(fileList) {
     const files = [...fileList].filter((f) => f.type.startsWith('image/'));
     if (!files.length) { notify('Envie um arquivo de imagem (PNG, JPG, WEBP…).', true); return; }
     let first = null;
     for (const file of files) {
-      const item = {
-        id: nextId++, file,
-        name: file.name || 'imagem-colada.png',
-        origUrl: URL.createObjectURL(file),
-        w: 0, h: 0, resultBlob: null, resultUrl: '', status: 'pending',
-      };
+      const item = makeItem(file);
       state.items.push(item);
       first = first || item;
       enqueue(item);
@@ -95,12 +103,23 @@
   window.addEventListener('dragover', (e) => e.preventDefault());
   window.addEventListener('drop', (e) => {
     e.preventDefault(); dragDepth = 0; document.body.classList.remove('dragging');
-    if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files);
+    if (!e.dataTransfer?.files?.length) return;
+    if (posterTakesFiles(e.dataTransfer.files)) return;
+    addFiles(e.dataTransfer.files);
   });
   window.addEventListener('paste', (e) => {
     const files = [...(e.clipboardData?.files || [])];
-    if (files.length) addFiles(files);
+    if (!files.length || posterTakesFiles(files)) return;
+    addFiles(files);
   });
+
+  function posterTakesFiles(files) {
+    if (!window.RancaPoster.isOpen()) return false;
+    const img = [...files].find((f) => f.type.startsWith('image/'));
+    if (img) loadPosterFile(img);
+    else notify('Envie um arquivo de imagem (PNG, JPG, WEBP…).', true);
+    return true;
+  }
 
   /* ---------------- Fila de processamento ---------------- */
   function enqueue(item) {
@@ -345,6 +364,8 @@
 
     el.downloadBtn.disabled = item.status !== 'done';
     el.shareBtn.disabled = item.status !== 'done';
+    el.posterBtn.disabled = false; // dá para fazer pôster da foto original antes de tirar o fundo
+    window.RancaPoster.refresh();
     el.sizeInfo.textContent = item.w ? item.w + ' × ' + item.h + ' px' : '';
   }
 
@@ -459,6 +480,62 @@
       if (err?.name !== 'AbortError') notify('Não foi possível compartilhar: ' + err.message, true);
     }
   });
+
+  /* ---------------- Pôster ---------------- */
+  // item.status 'idle' = foto aberta pelo atalho "Criar pôster", ainda sem passar pela IA
+  function openPoster(item) {
+    if (!item) {
+      window.RancaPoster.open(null, { onPick: pickPosterFile });
+      return;
+    }
+    window.RancaPoster.open(() => ({
+      original: item.input || item.file, // item.input = versão reduzida, se a foto for enorme
+      result: item.status === 'done' ? item.resultBlob : null,
+      failed: item.status === 'error',
+      idle: item.status === 'idle',
+      bg: state.bgColor,
+      name: item.name.replace(/\.[^.]+$/, ''),
+    }), {
+      onPick: pickPosterFile,
+      // "Remover o fundo" dentro do pôster: manda a foto para o editor (fica atrás da janela)
+      onRemoveBg: !AI_AVAILABLE ? null : () => {
+        if (item.status !== 'idle') return;
+        state.items.push(item);
+        showEditor();
+        state.current = item;
+        enqueue(item);
+        renderStage();
+      },
+    }).catch((err) => notify('Não foi possível abrir o pôster: ' + (err?.message || err), true));
+  }
+
+  el.posterBtn.addEventListener('click', () => { if (state.current) openPoster(state.current); });
+
+  // Atalho da tela inicial: abre o pôster vazio; a foto é escolhida (e trocada) dentro da janela
+  function pickPosterFile() { el.posterInput.click(); }
+
+  el.posterHomeBtn.addEventListener('click', () => openPoster(null));
+  el.posterInput.addEventListener('change', () => {
+    const file = el.posterInput.files[0];
+    el.posterInput.value = '';
+    if (file) loadPosterFile(file);
+  });
+
+  // Carrega uma foto direto no pôster (sem tirar o fundo); troca a imagem se a janela já estiver aberta.
+  async function loadPosterFile(file) {
+    if (!file.type.startsWith('image/')) { notify('Envie um arquivo de imagem (PNG, JPG, WEBP…).', true); return; }
+    const item = makeItem(file);
+    item.status = 'idle';
+    try {
+      await prepareInput(item); // reduz fotos enormes para não travar o aparelho
+    } catch (err) {
+      notify('Não foi possível abrir a imagem: ' + (err?.message || err), true);
+      return;
+    }
+    openPoster(item);
+  }
+
+  el.cardHomeBtn.addEventListener('click', () => notify('O Foto Card está chegando em breve!'));
 
   el.newBtn.addEventListener('click', () => el.fileInput.click());
 

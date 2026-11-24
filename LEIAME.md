@@ -13,6 +13,31 @@ modelo de IA em páginas `file://`. Use o `iniciar.bat` ou o link publicado.
 
 **Publicado em:** <https://vitorportela.github.io/ranca-fundo/>
 
+## Pôster em várias folhas
+
+**Imprimir como pôster** divide a imagem em várias folhas (A4, A3, Carta ou Ofício) e gera um PDF para
+imprimir em tamanho grande, seja um pôster ou um boneco de papelão em tamanho real.
+
+- Dá para começar pela tela inicial (**Outras funções → Criar pôster**), que abre a janela do pôster para escolher
+  a foto, ou pelo botão dentro do editor, depois de tirar o fundo.
+- **Trocar imagem** muda a foto sem fechar a janela e mantém as configurações. Com a janela aberta, arrastar ou
+  colar (Ctrl+V) uma imagem também troca a foto do pôster.
+- Dá para usar a imagem **sem fundo** ou **com o fundo original**. Se a foto ainda não passou pela IA, o botão
+  **Remover o fundo** dentro da janela do pôster faz o recorte; a opção "Sem fundo" libera quando terminar.
+
+- Escolha quantas folhas de largura ou de altura (aceita decimais, como 3,5).
+- Folhas que ficariam vazias (só fundo transparente) não são impressas.
+- Cada folha sai com um código (A1, A2, B1…), marcas de corte e, se quiser, uma faixa de sobreposição para colar.
+- A primeira página é um mapa de montagem com as instruções.
+
+- Ao ampliar, a foto passa por um filtro Lanczos, mais nítido que o redimensionamento do navegador.
+- Se a foto for pequena para o tamanho escolhido (menos de 150 dpi), aparece a opção **Melhorar nitidez com IA**:
+  o modelo Real-ESRGAN (`realesr-general-x4v3`, ~5 MB, `upscale.js`) recria os detalhes ao ampliar 4×.
+  É mais lento (no computador, segundos por folha; no celular, mais) e pode ser cancelado.
+  Depois do primeiro uso, funciona offline.
+
+Imprima em **tamanho real (100%)**, sem "ajustar à página".
+
 ## Usar no celular
 
 O site é um app instalável (PWA). Ele precisa estar hospedado em HTTPS. Depois do primeiro uso, funciona sem internet.
@@ -52,6 +77,8 @@ ajusta a suavidade do recorte sem rodar a IA de novo.
 |---|---|
 | `index.html`, `style.css`, `app.js` | Interface |
 | `edges.js` | Ajuste de suavidade da borda |
+| `poster.js` | Pôster em várias folhas e geração do PDF |
+| `upscale.js`, `vendor/upscale/` | Ampliação (Lanczos e IA Real-ESRGAN, licença BSD-3) |
 | `sw.js`, `manifest.webmanifest` | App instalável e funcionamento offline |
 | `server.js`, `iniciar.bat` | Servidor local sem dependências |
 | `vendor/background-removal.js` | Biblioteca `@imgly/background-removal` 1.7.0 empacotada |

@@ -17,16 +17,6 @@
 <body class="splash-open">
   <!-- Tela de abertura -->
   <div class="splash" id="splash" role="dialog" aria-modal="true" aria-label="Boas-vindas">
-    <div class="hearts" aria-hidden="true">
-      <i style="--x:8%;--d:9s;--w:0s;--s:18px"></i>
-      <i style="--x:20%;--d:11s;--w:3s;--s:12px"></i>
-      <i style="--x:33%;--d:8s;--w:1.5s;--s:22px"></i>
-      <i style="--x:48%;--d:12s;--w:5s;--s:14px"></i>
-      <i style="--x:62%;--d:9.5s;--w:.5s;--s:20px"></i>
-      <i style="--x:75%;--d:10.5s;--w:2.5s;--s:12px"></i>
-      <i style="--x:88%;--d:8.5s;--w:4s;--s:24px"></i>
-      <i style="--x:95%;--d:13s;--w:6s;--s:14px"></i>
-    </div>
     <div class="splash-card">
       <div class="splash-photo">
         <img src="img/mozao.png" alt="Foto do Mozão" width="480" height="599">
@@ -79,6 +69,25 @@
           <li>Mantém a resolução original</li>
           <li>Troque o fundo por uma cor antes de baixar</li>
         </ul>
+
+        <div class="tools">
+          <p class="tools-title">Outras funções</p>
+          <div class="tools-row">
+            <button class="tool-card" id="posterHomeBtn" type="button">
+              <span class="tool-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18M3 12h18"/></svg>
+              </span>
+              <span class="tool-text"><strong>Criar pôster</strong><small>Imprima gigante, em várias folhas</small></span>
+            </button>
+            <button class="tool-card" id="cardHomeBtn" type="button">
+              <span class="tool-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="2"/><circle cx="12" cy="10" r="2.6"/><path d="M8.5 17c.6-2 2-3 3.5-3s2.9 1 3.5 3"/></svg>
+              </span>
+              <span class="tool-text"><strong>Criar foto card</strong><small>Em breve</small></span>
+            </button>
+          </div>
+          <input type="file" id="posterInput" accept="image/*" hidden>
+        </div>
       </div>
 
       <div class="upload-card" id="dropzone">
@@ -157,6 +166,10 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m0 0L8 7m4-4l4 4M6 11H5a1 1 0 00-1 1v8a1 1 0 001 1h14a1 1 0 001-1v-8a1 1 0 00-1-1h-1"/></svg>
             Salvar / Compartilhar
           </button>
+          <button class="btn btn-soft" id="posterBtn" type="button" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18M3 12h18"/></svg>
+            Imprimir como pôster
+          </button>
           <p class="small center" id="sizeInfo"></p>
           <button class="btn btn-ghost" id="newBtn" type="button">Nova imagem</button>
         </div>
@@ -170,7 +183,109 @@
 
   <div class="drop-overlay" id="dropOverlay"><p>Solte a imagem aqui</p></div>
 
+  <!-- Pôster em várias folhas -->
+  <div class="modal" id="poster" role="dialog" aria-modal="true" aria-labelledby="posterTitle" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2 id="posterTitle">Pôster em várias folhas</h2>
+        <button class="icon-btn" id="posterClose" type="button" aria-label="Fechar">×</button>
+      </div>
+      <div class="poster-body">
+        <div class="poster-form">
+          <div class="group">
+            <h2>Imagem</h2>
+            <div class="img-row">
+              <span class="img-name" id="pImgName"></span>
+              <button class="btn btn-soft btn-sm" id="pPick" type="button">Trocar imagem</button>
+            </div>
+            <div id="pSrcBox">
+              <div class="seg" role="radiogroup" aria-label="Imagem do pôster">
+                <label><input type="radio" name="pSrc" id="pSrcResult" value="result"><span>Sem fundo</span></label>
+                <label><input type="radio" name="pSrc" id="pSrcOrig" value="original"><span>Com o fundo original</span></label>
+              </div>
+              <p class="small" id="pSrcHint"></p>
+              <button class="btn btn-soft src-action" id="pSrcAction" type="button" hidden>Remover o fundo</button>
+            </div>
+          </div>
+          <div class="group">
+            <h2>Papel</h2>
+            <div class="row2">
+              <label class="field">Tamanho
+                <select id="pPaper">
+                  <option value="a4">A4 (21 × 29,7 cm)</option>
+                  <option value="a3">A3 (29,7 × 42 cm)</option>
+                  <option value="letter">Carta (21,6 × 27,9 cm)</option>
+                  <option value="legal">Ofício (21,6 × 35,6 cm)</option>
+                </select>
+              </label>
+              <label class="field">Orientação
+                <select id="pOrient">
+                  <option value="portrait">Em pé</option>
+                  <option value="landscape">Deitada</option>
+                </select>
+              </label>
+            </div>
+            <div class="check">
+              <input type="checkbox" id="pMarginOn" checked>
+              <label for="pMarginOn">Margem de</label>
+              <input type="number" class="num" id="pMargin" min="0" max="40" step="1" value="10" aria-label="Margem em mm"> mm
+            </div>
+            <p class="small indent">A impressora não imprime até a borda; a margem vira a área de corte.</p>
+            <div class="check">
+              <input type="checkbox" id="pOverlapOn">
+              <label for="pOverlapOn">Sobrepor folhas em</label>
+              <input type="number" class="num" id="pOverlap" min="1" max="50" step="1" value="10" aria-label="Sobreposição em mm"> mm
+            </div>
+            <p class="small indent">Uma faixa repetida para colar uma folha por cima da outra.</p>
+          </div>
+          <div class="group">
+            <h2>Tamanho final</h2>
+            <div class="check">
+              <input type="text" class="num" id="pCount" inputmode="decimal" value="4" aria-label="Quantidade de folhas">
+              folhas de
+              <select id="pAxis" class="inline-select" aria-label="Medida">
+                <option value="wide">largura</option>
+                <option value="tall">altura</option>
+              </select>
+            </div>
+            <p class="small">Aceita decimais, como 3,5, para acertar o tamanho.</p>
+          </div>
+          <div class="group">
+            <h2>Opções</h2>
+            <label class="check" id="pSkipRow"><input type="checkbox" id="pSkip" checked> Não imprimir folhas vazias</label>
+            <label class="check"><input type="checkbox" id="pGuide" checked> Incluir mapa de montagem</label>
+            <div id="pAiRow" hidden>
+              <label class="check"><input type="checkbox" id="pAi"> Melhorar nitidez com IA</label>
+              <p class="small indent">A foto é pequena para esse tamanho. A IA recria os detalhes ao ampliar, mas o PDF demora bem mais para sair (no celular, pode levar alguns minutos).</p>
+            </div>
+          </div>
+        </div>
+        <div class="poster-preview">
+          <div class="poster-empty" id="pEmpty" hidden>
+            <svg class="upload-icon" viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="10" width="36" height="28" rx="5"/><path d="M12 32l8-10 6 7 4-4 6 7"/><circle cx="32" cy="18" r="3"/></svg>
+            <p>Escolha a foto que vai virar pôster</p>
+            <button class="btn btn-primary btn-lg" id="pEmptyPick" type="button">Escolher imagem</button>
+            <p class="small only-desktop">ou arraste / cole (<kbd>Ctrl</kbd> + <kbd>V</kbd>) aqui</p>
+          </div>
+          <canvas id="pCanvas" class="poster-canvas" aria-label="Prévia das folhas"></canvas>
+          <dl class="poster-info" id="pInfo"></dl>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <p class="small" id="pStatus" aria-live="polite"></p>
+        <button class="btn btn-soft" id="pShare" type="button" hidden>Compartilhar</button>
+        <button class="btn btn-soft" id="pCancel" type="button" hidden>Cancelar</button>
+        <button class="btn btn-primary" id="pMake" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+          Baixar PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="edges.js"></script>
+  <script src="upscale.js"></script>
+  <script src="poster.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
