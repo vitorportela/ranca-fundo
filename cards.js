@@ -45,7 +45,7 @@
     quality: $('cQuality'), selHint: $('cSelHint'), fullBtn: $('cFullOpen'),
     printBox: $('cPrintBox'), over: $('cOver'), overHint: $('cOverHint'),
     flip: $('cFlip'), dx: $('cDx'), dy: $('cDy'), marks: $('cMarks'), test: $('cTest'),
-    reset: $('cReset'), status: $('cStatus'), make: $('cMake'), share: $('cShare'),
+    reset: $('cReset'), projects: $('cProjects'), status: $('cStatus'), make: $('cMake'), share: $('cShare'),
     // tela cheia
     full: $('cFull'), fClose: $('cfClose'), fPrev: $('cfPrev'), fNext: $('cfNext'), fTitle: $('cfTitle'),
     fUndo: $('cfUndo'), fSide: $('cfSide'), fCanvas: $('cfCanvas'), fHint: $('cfHint'),
@@ -69,6 +69,8 @@
   let sel = 0;
   let side = 'front';
   let busy = false;
+  // projeto aberto (cada folha fica em "Meus projetos")
+  let curId = '', curName = '', curCreated = 0, lastThumb = null;
   let pdfFile = null;
   let view = null; // escala da última prévia: { gx, gy, k, dpr }
   const prefs = {
@@ -837,15 +839,8 @@
     input.addEventListener('change', () => { setBtnSize(); el.btnFace.value = fmt(prefs.btnFace); el.btnCut.value = fmt(prefs.btnCut); });
   }
 
-  el.reset.addEventListener('click', async () => {
-    if (busy) return;
-    if (!confirm('Apagar todas as fotos, stickers e molduras dos cards e bottons? "Meus stickers" continuam guardados.')) return;
-    for (const L of allLayers()) { Object.assign(L, blank(), { uid: L.uid, rev: L.rev + 1 }); }
-    fs.undo = [];
-    sel = 0;
-    changed();
-    el.status.textContent = 'Projeto apagado.';
-  });
+  el.reset.addEventListener('click', () => { if (!busy) newProject(); });
+  el.projects.addEventListener('click', () => { if (!busy && window.RancaProjects) window.RancaProjects.open(); });
 
   /* ---------------- Arrastar, zoom com a roda e com dois dedos ---------------- */
   const ptrs = new Map();
@@ -1124,7 +1119,10 @@
     syncUI();
     el.pick.disabled = true;
     try {
-      const blob = await build((msg) => { el.status.textContent = msg; });
+      const blob = await build((msg, frac) => {
+        el.status.textContent = msg;
+        window.RancaProgress.set('cards', frac, msg);
+      });
       const file = new File([blob], name, { type: 'application/pdf' });
       el.status.textContent = 'PDF pronto (' + (blob.size / 1048576).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' MB). Imprima em tamanho real (100%).';
       download(file);
@@ -1134,6 +1132,7 @@
       el.status.textContent = 'Não foi possível gerar o PDF: ' + (err?.message || err);
       return null;
     } finally {
+      window.RancaProgress.done('cards');
       busy = false;
       el.pick.disabled = false;
       syncUI();
@@ -1170,7 +1169,7 @@
     if (matchMedia('(pointer: coarse)').matches && el.full.requestFullscreen) {
       el.full.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
     }
-    try { history.pushState({ rancaFull: 1 }, ''); fs.pushed = true; } catch { fs.pushed = false; }
+    window.RancaNav.push('cardsFull', () => { fsClose(true); return true; });
     fsSync();
     fsDraw();
   }
@@ -1180,12 +1179,10 @@
     el.full.hidden = true;
     document.body.classList.remove('full-open');
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    if (fs.pushed && !fromHistory) { fs.pushed = false; history.back(); }
-    fs.pushed = false;
+    // o "voltar" do Android fecha a tela cheia, não o app
+    if (!fromHistory) window.RancaNav.pop('cardsFull');
     changed();
   }
-  // o "voltar" do Android fecha a tela cheia, não o app
-  window.addEventListener('popstate', () => { if (fs.open) { fs.pushed = false; fsClose(true); } });
 
   function fsDraw() { if (fs.open && !fs.raf) fs.raf = requestAnimationFrame(fsRender); }
 
@@ -1824,6 +1821,11 @@
       del: (ids) => tx('images', 'readwrite', (s) => { ids.forEach((id) => s.delete(id)); }),
       saveState: (st) => tx('state', 'readwrite', (s) => s.put(st, 'project')),
       loadState: () => tx('state', 'readonly', (s) => s.get('project')),
+      // cópias de cada projeto, para "Meus projetos"
+      putSnap: (rec) => tx('state', 'readwrite', (s) => s.put(rec, 'p:' + rec.id)),
+      getSnap: (id) => tx('state', 'readonly', (s) => s.get('p:' + id)),
+      delSnap: (id) => tx('state', 'readwrite', (s) => s.delete('p:' + id)),
+      snaps: () => tx('state', 'readonly', (s) => s.getAll(IDBKeyRange.bound('p:', 'p:\uffff'))),
     };
   })();
 
@@ -1844,14 +1846,48 @@
     clearTimeout(saveTimer);
     saveTimer = 0;
     if (!restored) return;
+    if (!curId) newIdentity();
     const st = {
-      v: 1, sel, side,
+      v: 1, sel, side, id: curId, name: curName, created: curCreated, mode: prefs.mode,
       cards: cards.map((c) => ({ front: serL(c.front), back: serL(c.back) })),
       sharedBack: serL(sharedBack),
       buttons: buttons.map(serL),
       mine: mine.map((r) => r.id),
     };
     Store.saveState(st).catch((e) => console.warn('Guardar projeto:', e));
+    // folha com alguma coisa: guarda também em "Meus projetos"
+    if (!allLayers().some((L) => L.img || L.frame || L.deco.length)) return;
+    const thumbP = makeThumb();
+    const meta = { id: curId, name: curName, created: curCreated, updated: Date.now(), mode: prefs.mode };
+    snapP = thumbP.then((thumb) => Store.putSnap({ ...meta, thumb, st }))
+      .catch((e) => console.warn('Guardar em Meus projetos:', e));
+  }
+  let snapP = Promise.resolve();
+
+  // miniatura da prévia (só quando a folha está na tela)
+  function makeThumb() {
+    const c = el.canvas;
+    if (el.modal.hidden || c.width < 10) return Promise.resolve(lastThumb);
+    const t = document.createElement('canvas');
+    const k = 300 / Math.max(c.width, c.height);
+    t.width = Math.round(c.width * k); t.height = Math.round(c.height * k);
+    const g = t.getContext('2d');
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(c, 0, 0, t.width, t.height);
+    return toBlob(t, 'image/jpeg', 0.8).then((b) => { lastThumb = b; return b; }, () => lastThumb);
+  }
+
+  function newIdentity() {
+    curId = newId(); curName = ''; curCreated = Date.now(); lastThumb = null;
+  }
+  const defaultName = (mode, t) => (mode === 'buttons' ? 'Bottons' : 'Foto cards') + ' de ' +
+    new Date(t || Date.now()).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+
+  function clearAll() {
+    for (const L of allLayers()) { Object.assign(L, blank(), { uid: L.uid, rev: L.rev + 1 }); }
+    fs.undo = [];
+    sel = 0;
+    side = 'front';
   }
   document.addEventListener('visibilitychange', () => { if (document.hidden && saveTimer) saveNow(); });
 
@@ -1869,20 +1905,31 @@
     // pede para o navegador não apagar o projeto quando o celular estiver sem espaço
     try { navigator.storage?.persist?.().catch(() => {}); } catch { /* sem suporte */ }
     const st = await Store.loadState();
-    if (!st || st.v !== 1) return;
+    if (!st || st.v !== 1) { newIdentity(); return; }
     busy = true;
     el.status.textContent = 'Abrindo o projeto salvo…';
-    const recs = new Map();
-    const getRec = (id, kind) => {
-      if (!id) return Promise.resolve(null);
-      if (!recs.has(id)) {
-        recs.set(id, Store.getImage(id).then((o) => (o
-          ? decode(o.blob, kind === 'sticker' ? STICKER_SIDE : MAX_SIDE, kind === 'sticker' ? 500 : 1200)
-            .then((r) => ({ id, name: o.name || '', ...r }))
-          : null)).catch(() => null));
-      }
-      return recs.get(id);
-    };
+    curId = st.id || newId(); curName = st.name || ''; curCreated = st.created || Date.now();
+    await applyState(st);
+    mine = (await Promise.all((st.mine || []).map((id) => getRec(id, 'sticker')))).filter(Boolean);
+    el.status.textContent = '';
+    await cleanImages();
+  }
+
+  // Imagens guardadas: decodifica cada uma uma vez só.
+  const recs = new Map();
+  function getRec(id, kind) {
+    if (!id) return Promise.resolve(null);
+    if (!recs.has(id)) {
+      recs.set(id, Store.getImage(id).then((o) => (o
+        ? decode(o.blob, kind === 'sticker' ? STICKER_SIDE : MAX_SIDE, kind === 'sticker' ? 500 : 1200)
+          .then((r) => ({ id, name: o.name || '', ...r }))
+        : null)).catch(() => null));
+    }
+    return recs.get(id);
+  }
+
+  // Coloca um projeto salvo (st) nos cards e bottons.
+  async function applyState(st) {
     async function fill(L, o) {
       if (!o) return;
       Object.assign(L, {
@@ -1906,25 +1953,107 @@
       while (buttons.length <= i) buttons.push(blank());
       await fill(buttons[i], st.buttons[i]);
     }
-    mine = (await Promise.all((st.mine || []).map((id) => getRec(id, 'sticker')))).filter(Boolean);
     sel = Number.isInteger(st.sel) ? st.sel : 0;
     side = st.side === 'back' ? 'back' : 'front';
-    el.status.textContent = '';
+  }
 
-    // apaga imagens que ninguém usa mais
+  // Apaga as imagens que nenhum projeto usa mais (nem "Meus stickers").
+  async function cleanImages() {
     const used = new Set(mine.map((r) => r.id));
+    const one = (o) => {
+      if (!o) return;
+      if (o.img) used.add(o.img);
+      for (const d of o.deco || []) if (d.ref && d.ref.id) used.add(d.ref.id);
+    };
     for (const L of allLayers()) {
       if (L.img) used.add(L.img.id);
       for (const s of L.deco) if (s.ref && s.ref.id) used.add(s.ref.id);
     }
+    const live = new Set(used); // o que o projeto aberto usa
+    await snapP;
+    for (const snap of (await Store.snaps()) || []) {
+      const st = snap && snap.st;
+      if (!st) continue;
+      for (const c of st.cards || []) { one(c.front); one(c.back); }
+      one(st.sharedBack);
+      (st.buttons || []).forEach(one);
+    }
     const keys = await Store.keys();
     const old = keys.filter((id) => !used.has(id));
     if (old.length) await Store.del(old);
+    // libera da memória as imagens decodificadas que o projeto aberto não usa
+    for (const id of [...recs.keys()]) if (!live.has(id)) recs.delete(id);
+  }
+
+  /* ---------------- Meus projetos ---------------- */
+  async function listProjects() {
+    await ready();
+    if (!el.modal.hidden || saveTimer) saveNow();
+    await snapP; // a cópia do projeto aberto termina de gravar
+    const snaps = ((await Store.snaps()) || []).filter((x) => x && x.id);
+    return snaps.map((x) => ({
+      id: x.id, name: x.name || defaultName(x.mode, x.created), updated: x.updated || 0, mode: x.mode,
+      thumb: x.thumb || null, current: x.id === curId,
+    })).sort((a, b) => b.updated - a.updated);
+  }
+  async function openProject(id) {
+    await ready();
+    if (busy) return;
+    if (id !== curId) {
+      saveNow();
+      const snap = await Store.getSnap(id);
+      if (!snap || !snap.st) return;
+      busy = true;
+      el.status.textContent = 'Abrindo o projeto…';
+      try {
+        clearAll();
+        await applyState(snap.st);
+        curId = snap.id; curName = snap.name || ''; curCreated = snap.created || Date.now(); lastThumb = snap.thumb || null;
+        if (snap.mode) { prefs.mode = snap.mode === 'buttons' ? 'buttons' : 'cards'; savePrefs(); }
+      } finally {
+        busy = false;
+        el.status.textContent = '';
+      }
+      cleanImages().catch(() => {});
+    }
+    await open();
+    changed();
+  }
+  async function newProject() {
+    await ready();
+    if (busy) return;
+    saveNow();
+    clearAll();
+    newIdentity();
+    await open();
+    changed();
+    cleanImages().catch(() => {});
+    el.status.textContent = 'Folha nova. A anterior ficou guardada em Meus projetos.';
+  }
+  async function deleteProject(id) {
+    await ready();
+    await snapP;
+    await Store.delSnap(id);
+    if (id === curId) {
+      clearAll();
+      newIdentity();
+      changed();
+    }
+    await cleanImages();
+  }
+  async function renameProject(id, name) {
+    await ready();
+    if (id === curId) { curName = name; saveNow(); await snapP; return; }
+    const snap = await Store.getSnap(id);
+    if (!snap) return;
+    snap.name = name;
+    await Store.putSnap(snap);
   }
 
   /* ---------------- Abrir / fechar ---------------- */
   // As fotos ficam guardadas no aparelho, mesmo fechando o app.
   function open() {
+    if (el.modal.hidden) window.RancaNav.push('cards', () => { if (busy) return false; close(true); return true; });
     el.modal.hidden = false;
     document.body.classList.add('modal-open');
     syncUI();
@@ -1932,18 +2061,18 @@
     el.close.focus();
     return ready();
   }
-  function close() {
+  function close(fromNav) {
     if (fs.open) fsClose(false);
     saveNow();
     el.modal.hidden = true;
     document.body.classList.remove('modal-open');
+    if (!fromNav) window.RancaNav.pop('cards');
   }
   function redraw() {
     if (!el.modal.hidden) render();
     fsDraw();
   }
   el.close.addEventListener('click', () => { if (!busy) close(); });
-  el.modal.addEventListener('click', (e) => { if (e.target === el.modal && !busy) close(); });
   document.addEventListener('keydown', (e) => {
     if (fs.open) {
       const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement?.tagName || '');
@@ -1952,7 +2081,7 @@
       else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !typing) { e.preventDefault(); el.fUndo.click(); }
       return;
     }
-    if (e.key === 'Escape' && !el.modal.hidden && !busy) close();
+    if (e.key === 'Escape' && !el.modal.hidden && !busy && window.RancaNav.top() === 'cards') close();
   });
   window.addEventListener('resize', () => { if (!el.modal.hidden) render(); fsDraw(); });
 
@@ -1972,5 +2101,9 @@
   }
 
   loadPrefs();
-  window.RancaCards = { open, addFiles, addSticker: addStickerFile, isOpen: () => !el.modal.hidden };
+  window.RancaCards = {
+    open, addFiles, addSticker: addStickerFile, isOpen: () => !el.modal.hidden,
+    close: () => { if (!busy && !el.modal.hidden) close(); },
+    listProjects, openProject, newProject, deleteProject, renameProject,
+  };
 })();

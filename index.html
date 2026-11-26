@@ -85,6 +85,12 @@
               </span>
               <span class="tool-text"><strong>Foto card e botton</strong><small>Com stickers e moldura</small></span>
             </button>
+            <button class="tool-card" id="projHomeBtn" type="button">
+              <span class="tool-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+              </span>
+              <span class="tool-text"><strong>Meus projetos</strong><small>Reabra o que você já montou</small></span>
+            </button>
           </div>
           <input type="file" id="posterInput" accept="image/*" hidden>
         </div>
@@ -201,11 +207,15 @@
   <div class="drop-overlay" id="dropOverlay"><p>Solte a imagem aqui</p></div>
 
   <!-- Pôster em várias folhas -->
-  <div class="modal" id="poster" role="dialog" aria-modal="true" aria-labelledby="posterTitle" hidden>
+  <div class="modal page" id="poster" role="dialog" aria-modal="true" aria-labelledby="posterTitle" hidden>
     <div class="modal-card">
       <div class="modal-head">
+        <button class="icon-btn back-btn" id="posterClose" type="button" aria-label="Voltar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
         <h2 id="posterTitle">Pôster em várias folhas</h2>
-        <button class="icon-btn" id="posterClose" type="button" aria-label="Fechar">×</button>
+        <button class="btn btn-soft btn-sm head-btn" id="pProjects" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+          Meus projetos
+        </button>
       </div>
       <div class="poster-body">
         <div class="poster-form">
@@ -222,6 +232,47 @@
               </div>
               <p class="small" id="pSrcHint"></p>
               <button class="btn btn-soft src-action" id="pSrcAction" type="button" hidden>Remover o fundo</button>
+            </div>
+          </div>
+          <div class="group">
+            <h2>Tamanho final</h2>
+            <div class="seg seg-ico" role="radiogroup" aria-label="Como escolher o tamanho">
+              <label><input type="radio" name="pSizeBy" id="pSizeCm" value="cm" checked><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16l13-13 5 5L8 21z"/><path d="M7 12l2 2M10 9l3 3M13 6l2 2"/></svg>Medida real (cm)</span></label>
+              <label><input type="radio" name="pSizeBy" id="pSizeSheets" value="sheets"><span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="11" height="15" rx="1.5"/><path d="M9 3h9.5A1.5 1.5 0 0120 4.5V17"/></svg>Nº de folhas</span></label>
+            </div>
+            <div id="pCmBox">
+              <div class="check">
+                A figura terá
+                <input type="text" class="num" id="pCm" inputmode="decimal" value="170" aria-label="Medida em cm"> cm de
+                <select id="pCmAxis" class="inline-select" aria-label="Medida">
+                  <option value="tall">altura</option>
+                  <option value="wide">largura</option>
+                </select>
+              </div>
+              <p class="small hint-gap" id="pCmHint"></p>
+            </div>
+            <div id="pSheetsBox" hidden>
+              <div class="check">
+                <input type="text" class="num" id="pCount" inputmode="decimal" value="4" aria-label="Quantidade de folhas">
+                folhas de
+                <select id="pAxis" class="inline-select" aria-label="Medida">
+                  <option value="wide">largura</option>
+                  <option value="tall">altura</option>
+                </select>
+              </div>
+              <p class="small hint-gap">Aceita decimais, como 3,5, para acertar o tamanho.</p>
+            </div>
+          </div>
+          <div class="group">
+            <h2>Montagem das folhas</h2>
+            <div class="seg seg-ico" role="radiogroup" aria-label="Montagem das folhas">
+              <label><input type="radio" name="pLay" id="pLayGrid" value="grid" checked><span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18M3 12h18"/></svg>Grade</span></label>
+              <label><input type="radio" name="pLay" id="pLayFree" value="free"><span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="8" height="8" rx="1"/><rect x="3" y="12.5" width="10" height="8" rx="1"/><rect x="14" y="9" width="7" height="11.5" rx="1"/></svg>Encaixe livre</span></label>
+            </div>
+            <p class="small hint-gap" id="pLayHint"></p>
+            <div id="pFreeBox" hidden>
+              <label class="check"><input type="checkbox" id="pHead"> Uma folha só para a cabeça</label>
+              <p class="small indent">A primeira folha pega o alto da figura inteiro, centralizado, para o rosto não ficar dividido entre folhas.</p>
             </div>
           </div>
           <div class="group">
@@ -242,6 +293,7 @@
                 </select>
               </label>
             </div>
+            <p class="small" id="pOrientHint"></p>
             <div class="check">
               <input type="checkbox" id="pMarginOn" checked>
               <label for="pMarginOn">Margem de</label>
@@ -256,18 +308,6 @@
             <p class="small indent">Uma faixa repetida para colar uma folha por cima da outra.</p>
           </div>
           <div class="group">
-            <h2>Tamanho final</h2>
-            <div class="check">
-              <input type="text" class="num" id="pCount" inputmode="decimal" value="4" aria-label="Quantidade de folhas">
-              folhas de
-              <select id="pAxis" class="inline-select" aria-label="Medida">
-                <option value="wide">largura</option>
-                <option value="tall">altura</option>
-              </select>
-            </div>
-            <p class="small">Aceita decimais, como 3,5, para acertar o tamanho.</p>
-          </div>
-          <div class="group">
             <h2>Opções</h2>
             <label class="check" id="pSkipRow"><input type="checkbox" id="pSkip" checked> Não imprimir folhas vazias</label>
             <label class="check"><input type="checkbox" id="pGuide" checked> Incluir mapa de montagem</label>
@@ -276,9 +316,9 @@
               <p class="small indent">A foto é pequena para esse tamanho. A IA recria os detalhes ao ampliar, mas o PDF demora bem mais para sair (no celular, pode levar alguns minutos).</p>
               <label class="field indent ai-level" id="pAiLevelRow">Fidelidade à foto
                 <select id="pAiLevel">
-                  <option value="0.3">Fiel à foto (rostos como na foto, um pouco mais macio)</option>
-                  <option value="0.6" selected>Equilibrado</option>
-                  <option value="1">Máximo de nitidez (a IA pode mudar rostos)</option>
+                  <option value="0.3">Alta fidelidade, baixa resolução</option>
+                  <option value="0.6" selected>Equilíbrio fidelidade/resolução</option>
+                  <option value="1">Baixa fidelidade, alta resolução</option>
                 </select>
               </label>
             </div>
@@ -290,14 +330,42 @@
             <p>Escolha a foto que vai virar pôster</p>
             <button class="btn btn-primary btn-lg" id="pEmptyPick" type="button">Escolher imagem</button>
             <p class="small only-desktop">ou arraste / cole (<kbd>Ctrl</kbd> + <kbd>V</kbd>) aqui</p>
+            <div class="pr-recent" id="pRecent"></div>
           </div>
-          <canvas id="pCanvas" class="poster-canvas" aria-label="Prévia das folhas"></canvas>
+          <div class="seg pv-tabs" id="pTabs" role="radiogroup" aria-label="O que ver">
+            <label><input type="radio" name="pTab" id="pTabMap" value="map" checked><span>Montagem</span></label>
+            <label><input type="radio" name="pTab" id="pTabPages" value="pages"><span>Folhas do PDF</span></label>
+          </div>
+          <div id="pMapBox">
+            <canvas id="pCanvas" class="poster-canvas" aria-label="Prévia das folhas"></canvas>
+            <div class="free-bar" id="pFreeBar" hidden>
+              <button class="btn btn-soft btn-sm" id="pfRot" type="button">Girar folha</button>
+              <button class="btn btn-soft btn-sm" id="pfAdd" type="button">Pôr folha</button>
+              <button class="btn btn-soft btn-sm" id="pfDel" type="button">Tirar folha</button>
+              <button class="btn btn-soft btn-sm" id="pfAuto" type="button">Arrumar sozinho</button>
+            </div>
+            <p class="small center hint-gap" id="pFreeHint" hidden></p>
+          </div>
+          <div id="pPagesBox" hidden>
+            <p class="small">Cada página como vai sair da impressora: papel, margem, marcas de corte e o nome das folhas vizinhas. Toque numa página para ver grande.</p>
+            <div class="pg-grid" id="pPages"></div>
+            <div class="pg-big" id="pBig" hidden>
+              <div class="pg-big-bar">
+                <button class="icon-btn" id="pBigPrev" type="button" aria-label="Página anterior"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 6l-6 6 6 6"/></svg></button>
+                <span class="small" id="pBigCap"></span>
+                <button class="icon-btn" id="pBigNext" type="button" aria-label="Próxima página"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6l6 6-6 6"/></svg></button>
+                <button class="btn btn-soft btn-sm" id="pBigClose" type="button">Ver todas</button>
+              </div>
+              <div class="pg-big-stage"><canvas id="pBigCanvas" aria-label="Página do PDF"></canvas></div>
+            </div>
+          </div>
           <dl class="poster-info" id="pInfo"></dl>
         </div>
       </div>
       <div class="modal-foot">
         <p class="small" id="pStatus" aria-live="polite"></p>
         <button class="btn btn-soft" id="pShare" type="button" hidden>Compartilhar</button>
+        <button class="btn btn-soft" id="pOpenPdf" type="button" hidden>Abrir PDF</button>
         <button class="btn btn-soft" id="pCancel" type="button" hidden>Cancelar</button>
         <button class="btn btn-primary" id="pMake" type="button" disabled>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
@@ -307,12 +375,43 @@
     </div>
   </div>
 
-  <!-- Foto cards e bottons -->
-  <div class="modal" id="cards" role="dialog" aria-modal="true" aria-labelledby="cardsTitle" hidden>
+  <!-- Meus projetos -->
+  <div class="modal page projects-page" id="projects" role="dialog" aria-modal="true" aria-labelledby="prTitle" hidden>
     <div class="modal-card">
       <div class="modal-head">
+        <button class="icon-btn back-btn" id="prClose" type="button" aria-label="Voltar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <h2 id="prTitle">Meus projetos</h2>
+      </div>
+      <div class="pr-body">
+        <p class="small">Tudo fica guardado neste aparelho, mesmo fechando o app. Toque num projeto para continuar de onde parou.</p>
+        <section class="pr-section">
+          <div class="pr-head">
+            <h3>Pôsteres</h3>
+            <button class="btn btn-soft btn-sm" id="prNewPoster" type="button">Novo pôster</button>
+          </div>
+          <div id="prPosters"></div>
+        </section>
+        <section class="pr-section">
+          <div class="pr-head">
+            <h3>Foto cards e bottons</h3>
+            <button class="btn btn-soft btn-sm" id="prNewCards" type="button">Nova folha</button>
+          </div>
+          <div id="prCards"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- Foto cards e bottons -->
+  <div class="modal page" id="cards" role="dialog" aria-modal="true" aria-labelledby="cardsTitle" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <button class="icon-btn back-btn" id="cClose" type="button" aria-label="Voltar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
         <h2 id="cardsTitle">Foto cards (9 por folha A4)</h2>
-        <button class="icon-btn" id="cClose" type="button" aria-label="Fechar">×</button>
+        <button class="btn btn-soft btn-sm head-btn" id="cProjects" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+          Meus projetos
+        </button>
       </div>
       <div class="poster-body">
         <div class="poster-form">
@@ -397,8 +496,8 @@
           </div>
           <div class="group">
             <h2>Projeto</h2>
-            <p class="small">Fotos, stickers e molduras ficam guardados neste aparelho, mesmo fechando o app.</p>
-            <button class="btn btn-soft btn-sm wide hint-gap-top" id="cReset" type="button">Começar do zero</button>
+            <p class="small">Fotos, stickers e molduras ficam guardados neste aparelho, mesmo fechando o app. Cada folha fica em <strong>Meus projetos</strong>.</p>
+            <button class="btn btn-soft btn-sm wide hint-gap-top" id="cReset" type="button">Começar uma folha nova</button>
           </div>
         </div>
         <div class="poster-preview">
@@ -480,11 +579,11 @@
   </div>
 
   <!-- Retoque com lápis -->
-  <div class="modal" id="retouch" role="dialog" aria-modal="true" aria-labelledby="rtTitle" hidden>
+  <div class="modal page" id="retouch" role="dialog" aria-modal="true" aria-labelledby="rtTitle" hidden>
     <div class="modal-card">
       <div class="modal-head">
+        <button class="icon-btn back-btn" id="rtClose" type="button" aria-label="Voltar sem salvar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
         <h2 id="rtTitle">Retocar com lápis</h2>
-        <button class="icon-btn" id="rtClose" type="button" aria-label="Fechar">×</button>
       </div>
       <div class="poster-body">
         <div class="poster-form">
@@ -538,6 +637,9 @@
     </div>
   </div>
 
+  <script src="progress.js"></script>
+  <script src="nav.js"></script>
+  <script src="projects.js"></script>
   <script src="edges.js"></script>
   <script src="retouch.js"></script>
   <script src="deco.js"></script>

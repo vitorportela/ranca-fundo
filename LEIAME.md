@@ -34,26 +34,51 @@ Eles valem para o PNG, o pôster, o foto card e o sticker.
 **Imprimir como pôster** divide a imagem em várias folhas (A4, A3, Carta ou Ofício) e gera um PDF para
 imprimir em tamanho grande, seja um pôster ou um boneco de papelão em tamanho real.
 
-- Dá para começar pela tela inicial (**Outras funções → Criar pôster**), que abre a janela do pôster para escolher
+- Dá para começar pela tela inicial (**Outras funções → Criar pôster**), que abre a página do pôster para escolher
   a foto, ou pelo botão dentro do editor, depois de tirar o fundo.
-- **Trocar imagem** muda a foto sem fechar a janela e mantém as configurações. Com a janela aberta, arrastar ou
+- **Trocar imagem** muda a foto sem sair da página e mantém as configurações. Com a página aberta, arrastar ou
   colar (Ctrl+V) uma imagem também troca a foto do pôster.
 - Dá para usar a imagem **sem fundo** ou **com o fundo original**. Se a foto ainda não passou pela IA, o botão
-  **Remover o fundo** dentro da janela do pôster faz o recorte; a opção "Sem fundo" libera quando terminar.
+  **Remover o fundo** dentro da página do pôster faz o recorte; a opção "Sem fundo" libera quando terminar.
 
-- Escolha quantas folhas de largura ou de altura (aceita decimais, como 3,5).
+**Tamanho final:**
+
+- **Medida real (cm)**: digite a altura (ou a largura) que a figura deve ter, por exemplo 170 cm para uma pessoa
+  em tamanho real. A medida vale só para a parte que aparece (da cabeça aos pés), não para a folha nem para o fundo
+  transparente. Com o fundo original, a pessoa é medida pelo recorte da IA e o fundo da foto aumenta junto
+  (se a pessoa ocupa metade da foto, 170 cm de pessoa viram 340 cm de foto).
+- **Nº de folhas**: quantas folhas de largura ou de altura (aceita decimais, como 3,5).
+
+**Montagem das folhas:**
+
+- **Grade**: folhas alinhadas em linhas e colunas, com código A1, A2, B1…
+- **Encaixe livre**: as folhas não precisam ficar alinhadas. O app divide a figura em faixas; cada faixa usa folhas
+  em pé ou deitadas e começa onde a figura começa naquela altura, escolhendo a combinação com menos folhas.
+  As folhas são numeradas (1, 2, 3…) de cima para baixo. Na grade aparece quantas folhas o encaixe livre economizaria.
+  - **Uma folha só para a cabeça**: a primeira folha pega o alto da figura inteiro, centralizado, para o rosto não
+    ficar dividido.
+  - Na prévia, toque numa folha para selecionar e arraste para mover (ela gruda na borda das vizinhas).
+    **Girar folha**, **Pôr folha**, **Tirar folha** e **Arrumar sozinho** (volta ao cálculo automático).
+    No computador, as setas movem 1 mm (com Shift, 10 mm) e Delete tira a folha.
+  - O que ficar sem folha aparece em vermelho.
+  - No PDF todas as páginas saem em pé; a folha deitada vai girada dentro da página.
+  - Na margem de cada folha aparece o nome das vizinhas, e um tracejado mostra onde a borda delas encaixa.
+
 - Folhas que ficariam vazias (só fundo transparente) não são impressas.
-- Cada folha sai com um código (A1, A2, B1…), marcas de corte e, se quiser, uma faixa de sobreposição para colar.
+- Cada folha sai com marcas de corte e, se quiser, uma faixa de sobreposição para colar.
 - A primeira página é um mapa de montagem com as instruções.
+- **Folhas do PDF** (aba acima da prévia) mostra cada página como vai sair da impressora: papel, margem, marcas e
+  textos. Toque numa página para ver grande e passar uma por uma. Depois de gerar, **Abrir PDF** (no computador) abre o
+  arquivo de verdade no leitor do navegador.
 
 - Ao ampliar, a foto passa por um filtro Lanczos, mais nítido que o redimensionamento do navegador.
 - Se a foto for pequena para o tamanho escolhido (menos de 150 dpi), aparece a opção **Melhorar nitidez com IA**:
   o modelo Real-ESRGAN (`realesr-general-x4v3`, ~5 MB, `upscale.js`) recria os detalhes ao ampliar 4×.
   É mais lento (no computador, segundos por folha; no celular, mais) e pode ser cancelado.
   Depois do primeiro uso, funciona offline.
-  Em **Fidelidade à foto**, dá para escolher quanto da IA entra: "Fiel à foto" (30% IA, 70% ampliação comum)
-  mantém os rostos como na foto; "Equilibrado" (60%) é o padrão; "Máximo de nitidez" usa só a IA, que pode
-  inventar traços em rostos pequenos.
+  Em **Fidelidade à foto**, dá para escolher quanto da IA entra: "Alta fidelidade, baixa resolução"
+  (30% IA, 70% ampliação comum) mantém os rostos como na foto; "Equilíbrio fidelidade/resolução" (60%) é o padrão;
+  "Baixa fidelidade, alta resolução" usa só a IA, que pode inventar traços em rostos pequenos.
 
 Imprima em **tamanho real (100%)**, sem "ajustar à página".
 
@@ -63,7 +88,7 @@ Imprima em **tamanho real (100%)**, sem "ajustar à página".
 No topo, **Folha de** escolhe entre **Foto cards** (9 por folha, 5,5 × 8,5 cm, frente e verso) e **Bottons**.
 
 - Toque num card para escolher a foto. Escolhendo várias de uma vez, elas vão para os próximos vazios.
-  Arrastar ou colar uma imagem com a janela aberta também funciona.
+  Arrastar ou colar uma imagem com a página aberta também funciona.
 - Arraste para posicionar; zoom pelo slider, pela roda do mouse ou com dois dedos; **Girar** gira 90°.
   **Usar esta foto nos 9 cards** repete a foto (e o ajuste) em todos; moldura e stickers de cada um ficam.
 - Verso: **Uma foto por card**, **Espelho da frente** (a foto e a moldura da frente invertidas, como se
@@ -124,7 +149,19 @@ Coloque stickers em `enfeites/stickers/` e molduras em `enfeites/molduras/` (PNG
 ### Projeto guardado
 
 Fotos, stickers, molduras e "Meus stickers" ficam guardados no aparelho (IndexedDB), mesmo fechando o app.
-**Começar do zero** apaga os cards e bottons (os "Meus stickers" continuam).
+**Começar uma folha nova** deixa a folha atual guardada em **Meus projetos** e abre uma vazia.
+
+## Meus projetos
+
+Na tela inicial (**Outras funções → Meus projetos**) ou no botão do topo do pôster e dos foto cards. Lista os pôsteres
+e as folhas de foto cards e bottons, com miniatura, tamanho e data. Tocar num projeto continua de onde parou
+(a foto, o recorte, as configurações e as folhas mexidas à mão). Dá para **Renomear** e **Excluir**.
+Tudo é salvo sozinho, no próprio aparelho (`projects.js` para os pôsteres, `cards.js` para os foto cards).
+
+## Páginas
+
+Pôster, foto cards, retoque e Meus projetos abrem como páginas inteiras (não janelas). A seta no topo volta, e o
+"voltar" do celular ou do navegador também (`nav.js`).
 
 ## Usar no celular
 
@@ -166,7 +203,9 @@ ajusta a suavidade do recorte sem rodar a IA de novo.
 | `index.html`, `style.css`, `app.js` | Interface |
 | `edges.js` | Ajuste de suavidade da borda |
 | `retouch.js` | Retoque com lápis e lápis mágico |
-| `poster.js` | Pôster em várias folhas e geração do PDF |
+| `nav.js` | Páginas e o botão "voltar" |
+| `projects.js` | Meus projetos (pôsteres guardados e a página de projetos) |
+| `poster.js` | Pôster em várias folhas (grade e encaixe livre), visualizador das folhas e geração do PDF |
 | `cards.js` | Foto cards (9 por folha, frente e verso), bottons, tela cheia e projeto guardado |
 | `deco.js` | Molduras desenhadas e stickers dos foto cards e bottons |
 | `enfeites/` | Stickers e molduras da pasta (`lista.json`, `atualizar-lista.js`) |

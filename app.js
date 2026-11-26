@@ -120,6 +120,7 @@
   // Com o pôster ou os foto cards abertos, a imagem arrastada/colada vai para a janela.
   function modalTakesFiles(files) {
     if (window.RancaRetouch.isOpen()) return true; // no retoque, ignora
+    if (window.RancaNav.top() === 'projects') return true; // em Meus projetos, também
     if (window.RancaCards.isOpen()) { window.RancaCards.addFiles(files); return true; }
     if (!window.RancaPoster.isOpen()) return false;
     const img = [...files].find((f) => f.type.startsWith('image/'));
@@ -143,6 +144,8 @@
     while (state.queue.length) {
       const item = state.queue.shift();
       item.status = 'processing';
+      aiJob = { name: item.name, left: state.queue.length };
+      window.RancaProgress.set('ai', 0, aiLabel('Preparando…'));
       if (item === state.current) renderStage();
       try {
         const blob = await processAI(item);
@@ -169,6 +172,15 @@
       renderHistory();
     }
     state.running = false;
+    aiJob = null;
+    window.RancaProgress.done('ai');
+  }
+
+  // texto da barra de andamento: qual foto e quantas faltam na fila
+  let aiJob = null;
+  function aiLabel(step) {
+    if (!aiJob) return step;
+    return 'Tirando o fundo de "' + aiJob.name + '"' + (aiJob.left ? ' (+' + aiJob.left + ' na fila)' : '') + ' · ' + step;
   }
 
   /* ---------------- Borda ---------------- */
@@ -274,8 +286,18 @@
   }
 
   function onProgress(key, current, total) {
-    if (!state.current || state.current.status !== 'processing') return;
     const pct = total ? Math.round((current / total) * 100) : 0;
+    // barra de baixo: baixar o modelo vai até 50%, depois a IA trabalha
+    if (aiJob) {
+      if (key.startsWith('fetch:')) {
+        window.RancaProgress.set('ai', pct / 200, aiLabel(key.includes('/models/') ? 'baixando o modelo de IA ' + pct + '%' : 'preparando a IA'));
+      } else if (key === 'compute:inference') {
+        window.RancaProgress.set('ai', 0.6, aiLabel('removendo o fundo…'));
+      } else if (key === 'compute:encode') {
+        window.RancaProgress.set('ai', 0.9, aiLabel('finalizando…'));
+      }
+    }
+    if (!state.current || state.current.status !== 'processing') return;
     if (key.startsWith('fetch:')) {
       setBusy(key.includes('/models/') ? 'Carregando modelo de IA… ' + pct + '%' : 'Preparando IA… ' + pct + '%', pct);
     } else if (key === 'compute:inference') {
@@ -557,7 +579,8 @@
 
   /* ---------------- Pôster ---------------- */
   // item.status 'idle' = foto aberta pelo atalho "Criar pôster", ainda sem passar pela IA
-  function openPoster(item) {
+  // project: projeto de "Meus projetos" que está sendo reaberto
+  function openPoster(item, project) {
     if (!item) {
       window.RancaPoster.open(null, { onPick: pickPosterFile });
       return;
@@ -567,9 +590,10 @@
       result: item.status === 'done' ? item.resultBlob : null,
       failed: item.status === 'error',
       idle: item.status === 'idle',
-      bg: state.bgColor,
-      name: item.name.replace(/\.[^.]+$/, ''),
+      bg: item.savedBg != null ? item.savedBg : state.bgColor,
+      name: item.savedName || item.name.replace(/\.[^.]+$/, ''),
     }), {
+      key: 'item' + item.id, project,
       onPick: pickPosterFile,
       // "Remover o fundo" dentro do pôster: manda a foto para o editor (fica atrás da janela)
       onRemoveBg: !AI_AVAILABLE ? null : () => {
@@ -589,6 +613,23 @@
   function pickPosterFile() { el.posterInput.click(); }
 
   el.posterHomeBtn.addEventListener('click', () => openPoster(null));
+  $('projHomeBtn').addEventListener('click', () => window.RancaProjects.open());
+
+  // Reabre um pôster de "Meus projetos" (sem projeto: abre o pôster vazio).
+  async function openPosterProject(rec) {
+    if (!rec) { openPoster(null); return; }
+    let b = {};
+    try { b = await window.RancaProjects.posters.blobs(rec.id); } catch (err) { console.warn(err); }
+    if (!b.original) { notify('Não foi possível abrir este pôster: a foto não está mais guardada no aparelho.', true); return; }
+    const file = new File([b.original], (rec.name || 'imagem') + '.png', { type: b.original.type || 'image/png' });
+    const item = makeItem(file);
+    item.input = file; // a foto guardada já é a versão reduzida
+    item.savedName = rec.name;
+    item.savedBg = rec.bg || '';
+    if (b.result) { item.status = 'done'; item.resultBlob = b.result; } else item.status = 'idle';
+    openPoster(item, rec);
+  }
+  window.RancaApp = { openPosterProject };
   el.posterInput.addEventListener('change', () => {
     const file = el.posterInput.files[0];
     el.posterInput.value = '';

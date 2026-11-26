@@ -658,15 +658,18 @@
       : 'Roda do mouse: aproximar. Botão direito (ou espaço) e arrastar: mover. Ctrl+Z: desfazer.';
     el.modal.hidden = false;
     document.body.classList.add('modal-open');
+    // o voltar do celular sai do retoque (pergunta antes, se tiver riscos)
+    window.RancaNav.push('retouch', () => cancel(true));
     resize();
     fitView();
     syncUI();
     return new Promise((r) => { resolveOpen = r; });
   }
 
-  function finish(result) {
+  function finish(result, fromNav) {
     el.modal.hidden = true;
     document.body.classList.remove('modal-open');
+    if (!fromNav) window.RancaNav.pop('retouch');
     const r = resolveOpen; resolveOpen = null;
     img = null; work = null; workCtx = null; ghostCv = null; scov = null; reg = null; soft = null;
     orig = null; base = null; undoStack = []; redoStack = [];
@@ -675,13 +678,15 @@
   }
   function hasEditsIn(a) { for (let i = 0; i < a.length; i++) if (a[i]) return true; return false; }
 
-  function cancel() {
-    if (busy) return;
-    if (dirty && !confirm('Sair sem salvar os retoques?')) return;
-    finish('cancel');
+  // fromNav: veio do voltar do navegador; devolve false se não saiu
+  function cancel(fromNav) {
+    if (busy) return false;
+    if (dirty && !confirm('Sair sem salvar os retoques?')) return false;
+    finish('cancel', fromNav === true);
+    return true;
   }
-  el.close.addEventListener('click', cancel);
-  el.cancel.addEventListener('click', cancel);
+  el.close.addEventListener('click', () => cancel());
+  el.cancel.addEventListener('click', () => cancel());
   el.done.addEventListener('click', () => { if (!busy) finish('done'); });
 
   document.addEventListener('keydown', (e) => {
