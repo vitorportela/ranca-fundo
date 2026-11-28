@@ -159,6 +159,48 @@
       },
     },
     {
+      // só no foto card: a foto aparece num quadrado em cima, com a faixa grande embaixo
+      id: 'polaroidq', name: 'Polaroid quadrada', card: true, win: (G) => {
+        const s = 4, side = G.w - 2 * s, top = 7;
+        return { x: 0, y: -G.h / 2 + top + side / 2, w: side, h: side, r: 0.8 };
+      },
+      draw: (g, G, k, c, W) => {
+        g.beginPath();
+        outer(g, G, k);
+        roundRect(g, (W.x - W.w / 2) * k, (W.y - W.h / 2) * k, W.w * k, W.h * k, W.r * k);
+        g.fillStyle = c;
+        g.fill('evenodd');
+      },
+    },
+    {
+      // só no foto card: a foto aparece num círculo, como um botton
+      id: 'botton', name: 'Botton', card: true, win: (G) => {
+        const d = G.w - 10;
+        return { x: 0, y: -G.h * 0.06, w: d, h: d, round: true };
+      },
+      draw: (g, G, k, c, W) => {
+        const R = W.w / 2;
+        g.beginPath();
+        outer(g, G, k);
+        g.moveTo((W.x + R) * k, W.y * k);
+        g.arc(W.x * k, W.y * k, R * k, 0, Math.PI * 2);
+        g.fillStyle = c;
+        g.fill('evenodd');
+        // aro do botton e um brilho
+        g.beginPath();
+        g.arc(W.x * k, W.y * k, (R + 1.4) * k, 0, Math.PI * 2);
+        g.lineWidth = 0.7 * k;
+        g.strokeStyle = detail(c);
+        g.stroke();
+        g.beginPath();
+        g.arc(W.x * k, W.y * k, (R - 1.6) * k, Math.PI * 1.08, Math.PI * 1.42);
+        g.lineWidth = 1.1 * k;
+        g.lineCap = 'round';
+        g.strokeStyle = 'rgba(255,255,255,.55)';
+        g.stroke();
+      },
+    },
+    {
       id: 'costura', name: 'Costura', draw: (g, G, k, c) => {
         band(g, G, k, 4.2, c);
         line(g, G, k, 2.1, 0.45, detail(c), [1.6, 1.1]);
@@ -207,7 +249,18 @@
       return;
     }
     const st = STYLES.find((x) => x.id === frame.style);
-    if (st) st.draw(g, G, k, frame.color || '#ffffff');
+    if (!st) return;
+    const color = frame.color || '#ffffff';
+    if (st.card && G.kind !== 'card') { band(g, G, k, 4, color); return; } // no botton, vira uma faixa lisa
+    st.draw(g, G, k, color, st.win ? st.win(G) : null);
+  }
+
+  // Janela onde a foto aparece (mm, a partir do centro do corte), para molduras que mostram
+  // a foto só num pedaço do card. null: a foto cobre o card inteiro.
+  function frameWindow(frame, G) {
+    if (!frame || !frame.style || G.kind !== 'card') return null;
+    const st = STYLES.find((x) => x.id === frame.style);
+    return st && st.win ? st.win(G) : null;
   }
 
   /* ---------------- Máscaras ---------------- */
@@ -262,5 +315,5 @@
   }
   const niceName = (path) => decodeURIComponent(path.split('/').pop()).replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
 
-  window.RancaDeco = { STYLES, COLORS, drawFrame, binarize, dilate, packs, niceName, roundRect };
+  window.RancaDeco = { STYLES, COLORS, drawFrame, frameWindow, binarize, dilate, packs, niceName, roundRect };
 })();

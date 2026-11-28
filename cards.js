@@ -46,6 +46,9 @@
     printBox: $('cPrintBox'), over: $('cOver'), overHint: $('cOverHint'),
     flip: $('cFlip'), dx: $('cDx'), dy: $('cDy'), marks: $('cMarks'), test: $('cTest'),
     reset: $('cReset'), projects: $('cProjects'), status: $('cStatus'), make: $('cMake'), share: $('cShare'),
+    sheetPrev: $('cSheetPrev'), sheetNext: $('cSheetNext'), sheetCap: $('cSheetCap'), sheetAdd: $('cSheetAdd'), sheetDel: $('cSheetDel'),
+    // confirmação
+    cfm: $('confirmBox'), cfmTitle: $('confirmTitle'), cfmText: $('confirmText'), cfmYes: $('confirmYes'), cfmNo: $('confirmNo'),
     // tela cheia
     full: $('cFull'), fClose: $('cfClose'), fPrev: $('cfPrev'), fNext: $('cfNext'), fTitle: $('cfTitle'),
     fUndo: $('cfUndo'), fSide: $('cfSide'), fCanvas: $('cfCanvas'), fHint: $('cfHint'),
@@ -62,9 +65,17 @@
   // camada: foto (img, zoom, ox, oy em mm, rot em 90°), moldura e stickers.
   // rev muda a cada alteração (a prévia guarda o card montado enquanto rev não muda).
   const blank = () => ({ uid: ++uid, rev: 0, img: null, zoom: 1, ox: 0, oy: 0, rot: 0, frame: null, deco: [] });
-  const cards = Array.from({ length: 9 }, () => ({ front: blank(), back: blank() }));
-  const sharedBack = blank();
-  const buttons = [];
+  // Um projeto tem uma ou mais folhas; cada folha é de foto cards ou de bottons.
+  // cards, sharedBack e buttons apontam sempre para a folha aberta (useSheet).
+  const newSheet = (mode) => ({
+    mode: mode === 'buttons' ? 'buttons' : 'cards',
+    cards: Array.from({ length: 9 }, () => ({ front: blank(), back: blank() })),
+    sharedBack: blank(),
+    buttons: [],
+  });
+  const sheets = [newSheet('cards')];
+  let cur = 0;
+  let cards = sheets[0].cards, sharedBack = sheets[0].sharedBack, buttons = sheets[0].buttons;
   let mine = [];  // "Meus stickers"
   let sel = 0;
   let side = 'front';
@@ -78,6 +89,13 @@
     over: false, btnFace: 44, btnCut: 54, frameColor: '#f6a8c8',
   };
   const touch = (L) => { L.rev++; };
+
+  function useSheet(i) {
+    cur = Math.max(0, Math.min(sheets.length - 1, i | 0));
+    const S = sheets[cur];
+    cards = S.cards; sharedBack = S.sharedBack; buttons = S.buttons;
+    prefs.mode = S.mode;
+  }
 
   const num = (v, min, max, def) => {
     const n = parseFloat(String(v).replace(',', '.'));
@@ -192,15 +210,33 @@
     return { ...base, L: cards[i].back };
   }
 
+  const sheetLayers = (S) => [...S.cards.flatMap((c) => [c.front, c.back]), S.sharedBack, ...S.buttons];
   function allLayers() {
-    return [...cards.flatMap((c) => [c.front, c.back]), sharedBack, ...buttons];
+    return sheets.flatMap(sheetLayers);
+  }
+  // a folha tem alguma coisa para imprimir?
+  function sheetHas(S) {
+    if (S.mode === 'buttons') {
+      const n = btnGrid(prefs.btnCut).length;
+      return S.buttons.slice(0, n).some((b) => b.img || b.frame || b.deco.length);
+    }
+    return S.cards.some((c) => hasContent({ L: c.front, deco: true }) || hasContent({ L: c.back, deco: true })) ||
+      hasContent({ L: S.sharedBack, deco: true });
   }
 
-  // mm do card por px da foto (zoom 1 = a foto cobre o card inteiro, com sangria)
+  // área que a foto cobre com zoom 1 (mm, a partir do centro do corte): o card inteiro com
+  // sangria, ou a janela da moldura (Polaroid quadrada, Botton)
+  function photoBox(L, G) {
+    const w = Deco.frameWindow(L.frame, G);
+    if (w) return { x: w.x, y: w.y, w: w.w + 1, h: w.h + 1 };
+    return { x: 0, y: 0, w: G.w + 2 * G.bl, h: G.h + 2 * G.bl };
+  }
+  // mm do card por px da foto (zoom 1 = a foto cobre a área inteira)
   function mmPerPx(L, G) {
     const odd = L.rot % 2 === 1;
     const iw = odd ? L.img.h : L.img.w, ih = odd ? L.img.w : L.img.h;
-    return Math.max((G.w + 2 * G.bl) / iw, (G.h + 2 * G.bl) / ih) * L.zoom;
+    const B = photoBox(L, G);
+    return Math.max(B.w / iw, B.h / ih) * L.zoom;
   }
 
   /* ---------------- Montagem de um card / botton ---------------- */
@@ -245,9 +281,10 @@
   function paint(g, L, mirror, k, hq, G, c) {
     const { w: iw, h: ih } = L.img;
     const s = mmPerPx(L, G) * k; // px do destino por px da foto
+    const B = photoBox(L, G);
     g.save();
     if (mirror) g.scale(-1, 1);
-    g.translate(L.ox * k, L.oy * k);
+    g.translate((B.x + L.ox) * k, (B.y + L.oy) * k);
     g.rotate(L.rot * Math.PI / 2);
     if (hq && s > 1.05) {
       // só o pedaço da foto que aparece no card, ampliado com Lanczos
@@ -615,12 +652,18 @@
         ? 'Arraste a foto para posicionar. Zoom: roda do mouse ou dois dedos. Para stickers e moldura, use a tela cheia.'
         : 'Assim fica o verso com a folha virada de lado: cada card fica atrás do mesmo número da frente.';
 
-    const any = btn
-      ? buttons.slice(0, lay.n).some((b) => b.img || b.frame || b.deco.length)
-      : cards.some((c) => hasContent({ L: c.front, deco: true }) || hasContent({ L: c.back, deco: true })) || hasContent({ L: sharedBack, deco: true });
+    const any = sheets.some(sheetHas);
     el.make.disabled = busy || !any;
     el.test.disabled = busy;
     el.reset.disabled = busy;
+
+    // folhas
+    el.sheetCap.textContent = 'Folha ' + (cur + 1) + ' de ' + sheets.length;
+    el.sheetPrev.disabled = busy || cur <= 0;
+    el.sheetNext.disabled = busy || cur >= sheets.length - 1;
+    el.sheetAdd.disabled = busy;
+    el.sheetDel.disabled = busy || (sheets.length === 1 && !sheetHas(sheets[0]));
+    for (const r of [el.modeCards, el.modeBtn]) r.disabled = busy;
   }
 
   function invalidatePdf() {
@@ -789,11 +832,85 @@
     r.addEventListener('change', () => {
       if (!r.checked) return;
       prefs.mode = r.value;
+      sheets[cur].mode = prefs.mode;
       savePrefs();
       sel = 0;
       changed();
     });
   }
+
+  /* ---------------- Folhas ---------------- */
+  function goSheet(i) {
+    if (busy || i < 0 || i >= sheets.length || i === cur) return;
+    useSheet(i);
+    sel = 0;
+    side = 'front';
+    changed();
+  }
+  el.sheetPrev.addEventListener('click', () => goSheet(cur - 1));
+  el.sheetNext.addEventListener('click', () => goSheet(cur + 1));
+  el.sheetAdd.addEventListener('click', () => {
+    if (busy) return;
+    sheets.splice(cur + 1, 0, newSheet(sheets[cur].mode));
+    useSheet(cur + 1);
+    sel = 0;
+    side = 'front';
+    changed();
+    el.status.textContent = 'Folha ' + (cur + 1) + ' criada.';
+  });
+  el.sheetDel.addEventListener('click', async () => {
+    if (busy) return;
+    const only = sheets.length === 1;
+    const ok = await askConfirm({
+      title: 'Apagar a folha ' + (cur + 1) + '?',
+      text: 'Tudo o que está nesta folha (fotos, stickers e molduras' + (isBtn() ? '' : ', frente e verso') +
+        ') será apagado e perdido. Não dá para desfazer.' + (only ? ' Como é a única folha, ela fica vazia.' : ''),
+      yes: 'Apagar folha',
+    });
+    if (!ok || busy) return;
+    const n = cur + 1;
+    if (only) sheets[0] = newSheet(sheets[0].mode);
+    else sheets.splice(cur, 1);
+    useSheet(Math.min(cur, sheets.length - 1));
+    fs.undo = [];
+    sel = 0;
+    side = 'front';
+    changed();
+    saveNow();
+    snapP.then(() => cleanImages()).catch(() => {});
+    el.status.textContent = 'Folha ' + n + ' apagada.';
+  });
+
+  /* ---------------- Confirmação ---------------- */
+  let cfmDone = null;
+  function askConfirm({ title, text, yes }) {
+    if (cfmDone) cfmDone(false);
+    el.cfmTitle.textContent = title;
+    el.cfmText.textContent = text;
+    el.cfmYes.textContent = yes || 'Confirmar';
+    el.cfm.hidden = false;
+    const back = document.activeElement;
+    el.cfmNo.focus();
+    return new Promise((res) => {
+      cfmDone = (v) => {
+        cfmDone = null;
+        el.cfm.hidden = true;
+        if (back && back.focus) back.focus();
+        res(v);
+      };
+    });
+  }
+  const confirmOpen = () => !!cfmDone;
+  el.cfmYes.addEventListener('click', () => cfmDone && cfmDone(true));
+  el.cfmNo.addEventListener('click', () => cfmDone && cfmDone(false));
+  el.cfm.addEventListener('click', (e) => { if (e.target === el.cfm && cfmDone) cfmDone(false); });
+  el.cfm.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (cfmDone) cfmDone(false); }
+    else if (e.key === 'Tab') { // o foco fica dentro da caixa
+      e.preventDefault();
+      (document.activeElement === el.cfmNo ? el.cfmYes : el.cfmNo).focus();
+    }
+  });
   for (const r of [el.sideFront, el.sideBack]) {
     r.addEventListener('change', () => { side = el.sideBack.checked ? 'back' : 'front'; changed(); });
   }
@@ -1000,8 +1117,7 @@
     return s;
   }
 
-  async function buildCards(onProgress) {
-    const doc = newDoc();
+  async function buildCards(doc, onProgress) {
     const lay = layout(), G = lay.G, E = G.E, DW = G.w + 2 * E, DH = G.h + 2 * E;
     const cache = new Map(); // a mesma imagem (verso igual em todos, sem enfeite passando) é gerada uma vez só
     const total = 18;
@@ -1037,11 +1153,9 @@
     if (prefs.marks) for (const [x, y] of markPos(lay)) ops += '0 g\n' + dot(backX(x), backY(y), 0.5);
     ops += '0.45 g\n' + text(W / 2, prefs.over ? 3.6 : 6, 7, 'VERSO', 'c');
     addPage(doc, back, ops, prefs.flip === 'short');
-    return finish(doc);
   }
 
-  async function buildButtons(onProgress) {
-    const doc = newDoc();
+  async function buildButtons(doc, onProgress) {
     const lay = layout(), G = lay.G, E = G.E, D = G.w + 2 * E;
     const imgs = [];
     for (let i = 0; i < lay.n; i++) {
@@ -1054,7 +1168,30 @@
     }
     const ops = '0.45 g\n' + text(W / 2, 4.4, 6.5, 'BOTTONS ' + fmt(G.face) + ' mm (corte ' + fmt(G.w) + ' mm) - imprima em tamanho real (100%) - recorte pela linha cinza', 'c');
     addPage(doc, imgs, ops, false);
+  }
+
+  // Todas as folhas com alguma coisa, uma depois da outra, num PDF só.
+  const sheetsToPrint = () => sheets.map((S, i) => i).filter((i) => sheetHas(sheets[i]));
+  async function buildAll(onProgress) {
+    const doc = newDoc();
+    const todo = sheetsToPrint();
+    const keep = cur, keepSel = sel;
+    try {
+      for (let j = 0; j < todo.length; j++) {
+        useSheet(todo[j]);
+        const pre = sheets.length > 1 ? 'Folha ' + (todo[j] + 1) + ': ' : '';
+        const prog = (msg, frac) => onProgress(pre + msg, (j + frac) / todo.length);
+        if (isBtn()) await buildButtons(doc, prog); else await buildCards(doc, prog);
+      }
+    } finally {
+      useSheet(keep);
+      sel = keepSel;
+    }
     return finish(doc);
+  }
+  function pdfName() {
+    const modes = new Set(sheetsToPrint().map((i) => sheets[i].mode));
+    return modes.size > 1 ? 'foto-cards-e-bottons.pdf' : modes.has('buttons') ? 'bottons.pdf' : 'foto-cards.pdf';
   }
 
   /* ---------------- Folha de teste ---------------- */
@@ -1141,7 +1278,7 @@
 
   el.make.addEventListener('click', async () => {
     if (pdfFile) { download(pdfFile); return; }
-    const file = await run(isBtn() ? buildButtons : buildCards, isBtn() ? 'bottons.pdf' : 'foto-cards.pdf');
+    const file = await run(buildAll, pdfName());
     if (!file) return;
     pdfFile = file;
     try { el.share.hidden = !(navigator.canShare && navigator.canShare({ files: [file] })); } catch { el.share.hidden = true; }
@@ -1149,7 +1286,7 @@
   el.test.addEventListener('click', () => run(buildTest, 'foto-card-teste.pdf'));
   el.share.addEventListener('click', async () => {
     if (!pdfFile) return;
-    try { await navigator.share({ files: [pdfFile], title: isBtn() ? 'Bottons' : 'Foto cards' }); }
+    try { await navigator.share({ files: [pdfFile], title: pdfFile.name === 'bottons.pdf' ? 'Bottons' : 'Foto cards' }); }
     catch (err) { if (err?.name !== 'AbortError') el.status.textContent = 'Não foi possível compartilhar: ' + err.message; }
   });
 
@@ -1165,10 +1302,7 @@
     fs.panel = null;
     el.full.hidden = false;
     document.body.classList.add('full-open');
-    // Android: tela cheia de verdade (some a barra do navegador)
-    if (matchMedia('(pointer: coarse)').matches && el.full.requestFullscreen) {
-      el.full.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
-    }
+    // sem requestFullscreen: o aviso do navegador ("arraste para sair da tela cheia") cobria os botões
     window.RancaNav.push('cardsFull', () => { fsClose(true); return true; });
     fsSync();
     fsDraw();
@@ -1178,7 +1312,6 @@
     fs.open = false;
     el.full.hidden = true;
     document.body.classList.remove('full-open');
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
     // o "voltar" do Android fecha a tela cheia, não o app
     if (!fromHistory) window.RancaNav.pop('cardsFull');
     changed();
@@ -1201,8 +1334,8 @@
 
     const it = fsItem(), G = it.G, L = it.L;
     const m = Math.max(G.E, 2) + 3;
-    const k = Math.min(c.width / (G.w + 2 * m), (c.height - 22 * dpr) / (G.h + 2 * m));
-    Object.assign(fs, { k, dpr, cx: c.width / 2, cy: (c.height - 22 * dpr) / 2 });
+    const k = Math.min(c.width / (G.w + 2 * m), (c.height - 46 * dpr) / (G.h + 2 * m));
+    Object.assign(fs, { k, dpr, cx: c.width / 2, cy: (c.height - 46 * dpr) / 2 });
     const img = compose(it, k, { preview: true, fast: fs.fast });
     const ix = Math.round(fs.cx - img.width / 2), iy = Math.round(fs.cy - img.height / 2);
     g.save();
@@ -1600,7 +1733,7 @@
     none.innerHTML = '<span>Sem moldura</span>';
     none.addEventListener('click', () => setFrame(null));
     g1.appendChild(none);
-    for (const st of Deco.STYLES) {
+    for (const st of Deco.STYLES.filter((x) => !x.card || !isBtn())) {
       const t = tile(frameThumb({ style: st.id, color: prefs.frameColor }), st.name);
       t.dataset.key = 'st:' + st.id;
       const cap = document.createElement('span');
@@ -1848,17 +1981,24 @@
     if (!restored) return;
     if (!curId) newIdentity();
     const st = {
-      v: 1, sel, side, id: curId, name: curName, created: curCreated, mode: prefs.mode,
-      cards: cards.map((c) => ({ front: serL(c.front), back: serL(c.back) })),
-      sharedBack: serL(sharedBack),
-      buttons: buttons.map(serL),
+      v: 2, sel, side, cur, id: curId, name: curName, created: curCreated, mode: projectMode(),
+      sheets: sheets.map((S) => ({
+        mode: S.mode,
+        cards: S.cards.map((c) => ({ front: serL(c.front), back: serL(c.back) })),
+        sharedBack: serL(S.sharedBack),
+        buttons: S.buttons.map(serL),
+      })),
       mine: mine.map((r) => r.id),
     };
     Store.saveState(st).catch((e) => console.warn('Guardar projeto:', e));
-    // folha com alguma coisa: guarda também em "Meus projetos"
-    if (!allLayers().some((L) => L.img || L.frame || L.deco.length)) return;
+    // projeto com alguma coisa: guarda também em "Meus projetos" (vazio: sai de lá)
+    if (!allLayers().some((L) => L.img || L.frame || L.deco.length)) {
+      const id = curId;
+      if (!busy) snapP = snapP.then(() => Store.delSnap(id)).catch(() => {});
+      return;
+    }
     const thumbP = makeThumb();
-    const meta = { id: curId, name: curName, created: curCreated, updated: Date.now(), mode: prefs.mode };
+    const meta = { id: curId, name: curName, created: curCreated, updated: Date.now(), mode: st.mode, sheets: sheets.length };
     snapP = thumbP.then((thumb) => Store.putSnap({ ...meta, thumb, st }))
       .catch((e) => console.warn('Guardar em Meus projetos:', e));
   }
@@ -1880,11 +2020,18 @@
   function newIdentity() {
     curId = newId(); curName = ''; curCreated = Date.now(); lastThumb = null;
   }
-  const defaultName = (mode, t) => (mode === 'buttons' ? 'Bottons' : 'Foto cards') + ' de ' +
+  const modeName = (mode) => (mode === 'buttons' ? 'Bottons' : mode === 'mixed' ? 'Foto cards e bottons' : 'Foto cards');
+  const defaultName = (mode, t) => modeName(mode) + ' de ' +
     new Date(t || Date.now()).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  // 'cards', 'buttons' ou 'mixed' (folhas dos dois tipos)
+  function projectMode() {
+    const modes = new Set(sheets.map((S) => S.mode));
+    return modes.size > 1 ? 'mixed' : sheets[0].mode;
+  }
 
   function clearAll() {
-    for (const L of allLayers()) { Object.assign(L, blank(), { uid: L.uid, rev: L.rev + 1 }); }
+    sheets.splice(0, sheets.length, newSheet(prefs.mode));
+    useSheet(0);
     fs.undo = [];
     sel = 0;
     side = 'front';
@@ -1905,7 +2052,7 @@
     // pede para o navegador não apagar o projeto quando o celular estiver sem espaço
     try { navigator.storage?.persist?.().catch(() => {}); } catch { /* sem suporte */ }
     const st = await Store.loadState();
-    if (!st || st.v !== 1) { newIdentity(); return; }
+    if (!st || (st.v !== 1 && st.v !== 2)) { newIdentity(); return; }
     busy = true;
     el.status.textContent = 'Abrindo o projeto salvo…';
     curId = st.id || newId(); curName = st.name || ''; curCreated = st.created || Date.now();
@@ -1943,19 +2090,31 @@
       }
       touch(L);
     }
-    // uma por vez, para não estourar a memória do celular
-    for (let i = 0; i < 9; i++) {
-      const c = (st.cards || [])[i];
-      if (c) { await fill(cards[i].front, c.front); await fill(cards[i].back, c.back); }
+    // v1: uma folha só, com os dados direto no projeto
+    const list = sheetsOf(st);
+    const made = [];
+    for (const o of list) {
+      const S = newSheet(o.mode || prefs.mode);
+      // uma imagem por vez, para não estourar a memória do celular
+      for (let i = 0; i < 9; i++) {
+        const c = (o.cards || [])[i];
+        if (c) { await fill(S.cards[i].front, c.front); await fill(S.cards[i].back, c.back); }
+      }
+      await fill(S.sharedBack, o.sharedBack);
+      for (let i = 0; i < (o.buttons || []).length; i++) {
+        while (S.buttons.length <= i) S.buttons.push(blank());
+        await fill(S.buttons[i], o.buttons[i]);
+      }
+      made.push(S);
     }
-    await fill(sharedBack, st.sharedBack);
-    for (let i = 0; i < (st.buttons || []).length; i++) {
-      while (buttons.length <= i) buttons.push(blank());
-      await fill(buttons[i], st.buttons[i]);
-    }
+    if (!made.length) made.push(newSheet(prefs.mode));
+    sheets.splice(0, sheets.length, ...made);
+    useSheet(Number.isInteger(st.cur) ? st.cur : 0);
     sel = Number.isInteger(st.sel) ? st.sel : 0;
     side = st.side === 'back' ? 'back' : 'front';
   }
+  const sheetsOf = (st) => (Array.isArray(st.sheets) ? st.sheets
+    : [{ mode: st.mode, cards: st.cards, sharedBack: st.sharedBack, buttons: st.buttons }]);
 
   // Apaga as imagens que nenhum projeto usa mais (nem "Meus stickers").
   async function cleanImages() {
@@ -1974,9 +2133,11 @@
     for (const snap of (await Store.snaps()) || []) {
       const st = snap && snap.st;
       if (!st) continue;
-      for (const c of st.cards || []) { one(c.front); one(c.back); }
-      one(st.sharedBack);
-      (st.buttons || []).forEach(one);
+      for (const o of sheetsOf(st)) {
+        for (const c of o.cards || []) { one(c.front); one(c.back); }
+        one(o.sharedBack);
+        (o.buttons || []).forEach(one);
+      }
     }
     const keys = await Store.keys();
     const old = keys.filter((id) => !used.has(id));
@@ -1993,6 +2154,7 @@
     const snaps = ((await Store.snaps()) || []).filter((x) => x && x.id);
     return snaps.map((x) => ({
       id: x.id, name: x.name || defaultName(x.mode, x.created), updated: x.updated || 0, mode: x.mode,
+      kindName: modeName(x.mode), sheets: x.sheets || 1,
       thumb: x.thumb || null, current: x.id === curId,
     })).sort((a, b) => b.updated - a.updated);
   }
@@ -2009,7 +2171,7 @@
         clearAll();
         await applyState(snap.st);
         curId = snap.id; curName = snap.name || ''; curCreated = snap.created || Date.now(); lastThumb = snap.thumb || null;
-        if (snap.mode) { prefs.mode = snap.mode === 'buttons' ? 'buttons' : 'cards'; savePrefs(); }
+        savePrefs();
       } finally {
         busy = false;
         el.status.textContent = '';
@@ -2028,7 +2190,7 @@
     await open();
     changed();
     cleanImages().catch(() => {});
-    el.status.textContent = 'Folha nova. A anterior ficou guardada em Meus projetos.';
+    el.status.textContent = 'Projeto novo. O anterior ficou guardado em Meus projetos.';
   }
   async function deleteProject(id) {
     await ready();
@@ -2053,7 +2215,14 @@
   /* ---------------- Abrir / fechar ---------------- */
   // As fotos ficam guardadas no aparelho, mesmo fechando o app.
   function open() {
-    if (el.modal.hidden) window.RancaNav.push('cards', () => { if (busy) return false; close(true); return true; });
+    if (el.modal.hidden) {
+      window.RancaNav.push('cards', () => {
+        if (confirmOpen()) { cfmDone(false); return false; } // o "voltar" fecha só a confirmação
+        if (busy) return false;
+        close(true);
+        return true;
+      });
+    }
     el.modal.hidden = false;
     document.body.classList.add('modal-open');
     syncUI();
@@ -2074,6 +2243,7 @@
   }
   el.close.addEventListener('click', () => { if (!busy) close(); });
   document.addEventListener('keydown', (e) => {
+    if (confirmOpen()) return;
     if (fs.open) {
       const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement?.tagName || '');
       if (e.key === 'Escape') { if (fs.st >= 0) { fs.st = -1; fsSync(); fsDraw(); } else fsClose(false); }

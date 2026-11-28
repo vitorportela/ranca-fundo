@@ -394,7 +394,7 @@
         <section class="pr-section">
           <div class="pr-head">
             <h3>Foto cards e bottons</h3>
-            <button class="btn btn-soft btn-sm" id="prNewCards" type="button">Nova folha</button>
+            <button class="btn btn-soft btn-sm" id="prNewCards" type="button">Novo projeto</button>
           </div>
           <div id="prCards"></div>
         </section>
@@ -415,13 +415,6 @@
       </div>
       <div class="poster-body">
         <div class="poster-form">
-          <div class="group">
-            <h2>Folha de</h2>
-            <div class="seg" role="radiogroup" aria-label="Tipo de folha">
-              <label><input type="radio" name="cMode" id="cModeCards" value="cards" checked><span>Foto cards</span></label>
-              <label><input type="radio" name="cMode" id="cModeBtn" value="buttons"><span>Bottons</span></label>
-            </div>
-          </div>
           <div class="group" id="cSideBox">
             <h2>Editando</h2>
             <div class="seg" role="radiogroup" aria-label="Lado da folha">
@@ -496,11 +489,32 @@
           </div>
           <div class="group">
             <h2>Projeto</h2>
-            <p class="small">Fotos, stickers e molduras ficam guardados neste aparelho, mesmo fechando o app. Cada folha fica em <strong>Meus projetos</strong>.</p>
-            <button class="btn btn-soft btn-sm wide hint-gap-top" id="cReset" type="button">Começar uma folha nova</button>
+            <p class="small">Fotos, stickers e molduras ficam guardados neste aparelho, mesmo fechando o app. Cada projeto (com todas as folhas) fica em <strong>Meus projetos</strong>.</p>
+            <button class="btn btn-soft btn-sm wide hint-gap-top" id="cReset" type="button">Começar um projeto novo</button>
           </div>
         </div>
         <div class="poster-preview">
+          <div class="sheet-kind">
+            <span class="sheet-label" id="cModeLabel">Folha de</span>
+            <div class="seg seg-ico" role="radiogroup" aria-labelledby="cModeLabel">
+              <label><input type="radio" name="cMode" id="cModeCards" value="cards" checked><span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2"/><circle cx="12" cy="10" r="2.6"/><path d="M8.5 17c.6-2 2-3 3.5-3s2.9 1 3.5 3"/></svg>Foto cards</span></label>
+              <label><input type="radio" name="cMode" id="cModeBtn" value="buttons"><span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.5"/></svg>Bottons</span></label>
+            </div>
+          </div>
+          <div class="sheet-bar" role="group" aria-label="Folhas do projeto">
+            <button class="icon-btn" id="cSheetPrev" type="button" aria-label="Folha anterior" title="Folha anterior"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 6l-6 6 6 6"/></svg></button>
+            <span class="sheet-cap" id="cSheetCap" aria-live="polite">Folha 1 de 1</span>
+            <button class="icon-btn" id="cSheetNext" type="button" aria-label="Próxima folha" title="Próxima folha"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6l6 6-6 6"/></svg></button>
+            <span class="sheet-sep" aria-hidden="true"></span>
+            <button class="btn btn-soft sheet-act" id="cSheetAdd" type="button" aria-label="Acrescentar uma folha" title="Acrescentar uma folha">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h9a2 2 0 012 2v12"/><rect x="4" y="6" width="12" height="15" rx="2"/><path d="M10 10.5v6M7 13.5h6"/></svg>
+              <span class="sheet-txt">Nova folha</span>
+            </button>
+            <button class="btn btn-soft sheet-act btn-danger-soft" id="cSheetDel" type="button" aria-label="Apagar esta folha" title="Apagar esta folha">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>
+              <span class="sheet-txt">Apagar</span>
+            </button>
+          </div>
           <canvas id="cCanvas" class="poster-canvas card-canvas" aria-label="Prévia da folha"></canvas>
           <div class="preview-actions">
             <button class="btn btn-primary btn-sm" id="cFullOpen" type="button">
@@ -576,6 +590,19 @@
       <button class="cf-tool" type="button" data-panel="frames" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>Moldura</button>
     </div>
     <input type="file" id="cfStInput" accept="image/*" multiple hidden>
+  </div>
+
+  <!-- Confirmação (apagar folha) -->
+  <div class="confirm" id="confirmBox" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmText" hidden>
+    <div class="confirm-card">
+      <span class="confirm-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></span>
+      <h2 id="confirmTitle"></h2>
+      <p id="confirmText"></p>
+      <div class="confirm-acts">
+        <button class="btn btn-soft" id="confirmNo" type="button">Cancelar</button>
+        <button class="btn btn-danger" id="confirmYes" type="button">Apagar</button>
+      </div>
+    </div>
   </div>
 
   <!-- Retoque com lápis -->

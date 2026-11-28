@@ -64,7 +64,7 @@
     if (!window.RancaCards) return [];
     return (await window.RancaCards.listProjects()).map((r) => ({
       kind, id: r.id, name: r.name, updated: r.updated, thumb: r.thumb, current: r.current,
-      meta: r.mode === 'buttons' ? 'Bottons' : 'Foto cards',
+      meta: [r.kindName || (r.mode === 'buttons' ? 'Bottons' : 'Foto cards'), r.sheets > 1 ? r.sheets + ' folhas' : ''].filter(Boolean).join(' · '),
     }));
   }
 
